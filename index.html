@@ -991,6 +991,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <div id="aDeleteAllMsg"></div>
         </div>
 
+        <div class="card">
+          <h2>Unduh Rekap</h2>
+          <p class="sub">Pilih "Semua Fasilitator" untuk daftar hadir lengkap, atau pilih satu fasilitator untuk mengunduh hanya peserta yang memilihnya.</p>
+          <label>Fasilitator</label>
+          <select id="aFilterInstr"></select>
+        </div>
         <div class="btn-row">
           <button class="btn btn-ghost" id="aExportAll">Unduh CSV</button>
           <button class="btn btn-ghost" id="aExportPdf">Unduh PDF</button>
@@ -2436,6 +2442,15 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     document.getElementById('aCountInstr').textContent = config.instruktur.filter(i=>i.aktif).length;
     document.getElementById('aCatatan').textContent = config.catatan && config.catatan.trim() ? config.catatan : '– Belum ada catatan –';
 
+    // dropdown pilih fasilitator untuk unduh CSV/PDF khusus satu fasilitator
+    const filterSel = document.getElementById('aFilterInstr');
+    const filterCurrentVal = filterSel.value;
+    filterSel.innerHTML = `<option value="">Semua ${roleLabelLower()}</option>` +
+      config.instruktur.map(i=>`<option value="${i.id}">${escapeHtml(i.nama)} — ${escapeHtml(roleLabel(i))}</option>`).join('');
+    if(filterCurrentVal && config.instruktur.some(i=>i.id===filterCurrentVal)){
+      filterSel.value = filterCurrentVal;
+    }
+
     // instruktur list
     const iListEl = document.getElementById('aInstrList');
     if(config.instruktur.length===0){
@@ -2555,7 +2570,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   });
 
   document.getElementById('aExportAll').addEventListener('click', ()=>{
-    downloadCsv(buildRoster(null), 'daftar_hadir_lengkap.csv');
+    const filterId = document.getElementById('aFilterInstr').value;
+    if(filterId){
+      const instr = config.instruktur.find(i=>i.id===filterId);
+      downloadCsv(buildRoster(filterId), `presensi_${(instr ? instr.nama : 'fasilitator').replace(/\s+/g,'_')}.csv`);
+    }else{
+      downloadCsv(buildRoster(null), 'daftar_hadir_lengkap.csv');
+    }
   });
 
   document.getElementById('aSaveAccount').addEventListener('click', async ()=>{
@@ -2829,8 +2850,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   });
 
   document.getElementById('aExportPdf').addEventListener('click', ()=>{
-    const signList = config.instruktur.filter(i=>i.aktif).map(i=>({ nama: i.nama, signature: i.signature || null }));
-    generatePdf(buildRoster(null), '', 'daftar_hadir_lengkap.pdf', signList);
+    const filterId = document.getElementById('aFilterInstr').value;
+    if(filterId){
+      const instr = config.instruktur.find(i=>i.id===filterId);
+      if(!instr){ showDiag('Fasilitator tidak ditemukan.'); return; }
+      const signList = [{ nama: instr.nama, signature: instr.signature || null }];
+      generatePdf(buildRoster(filterId), '', `presensi_${instr.nama.replace(/\s+/g,'_')}.pdf`, signList, instr.materi || '', instr.nama, { kegiatan: instr.kegiatan, tanggal: instr.tanggal, sesi: instr.sesi }, roleLabel(instr));
+    }else{
+      const signList = config.instruktur.filter(i=>i.aktif).map(i=>({ nama: i.nama, signature: i.signature || null }));
+      generatePdf(buildRoster(null), '', 'daftar_hadir_lengkap.pdf', signList);
+    }
   });
 
 
