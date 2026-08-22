@@ -850,10 +850,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         </div>
         <div class="card">
           <h2 id="iWelcome">Sesi</h2>
-          <p class="sub">Daftar peserta terdaftar, status hadir sesi Anda diperbarui otomatis. ✎ mengedit data peserta, ✓ menandai hadir manual (tanpa tanda tangan), ✕ membatalkan kehadiran di sesi Anda saja — fasilitator lain tidak terpengaruh. Untuk menghapus peserta secara permanen dari semua sesi, hubungi Admin Utama.</p>
+          <p class="sub">Daftar peserta terdaftar, status hadir sesi Anda diperbarui otomatis. ✎ mengedit data peserta, ✓ menandai hadir manual (tanpa tanda tangan), ✕ membatalkan kehadiran di sesi Anda saja — fasilitator lain tidak terpengaruh.</p>
           <div id="iList"></div>
           <button class="btn btn-danger" id="iResetSesi" style="margin-top:14px; width:100%;">Kosongkan Peserta — Mulai Sesi Baru</button>
           <div id="iResetMsg"></div>
+          <button class="btn btn-danger" id="iDeleteAllParticipants" style="margin-top:10px; width:100%;">Hapus Semua Peserta (Permanen, Semua Sesi)</button>
+          <div id="iDeleteAllMsg"></div>
         </div>
         <div class="card">
           <h2>Tambah / Edit Peserta Manual</h2>
@@ -986,6 +988,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <h2>Rekap Kehadiran</h2>
           <p class="sub">Seluruh peserta terdaftar dan status kehadirannya.</p>
           <div id="aList"></div>
+          <button class="btn btn-danger" id="aDeleteAllParticipants" style="margin-top:14px; width:100%;">Hapus Semua Peserta (Permanen)</button>
+          <div id="aDeleteAllMsg"></div>
         </div>
 
         <div class="btn-row">
@@ -1292,6 +1296,22 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       participants = participants.filter(x=>x.id!==id);
       records = Array.from(recordCache.values());
     }catch(e){ console.error('gagal hapus peserta total', e); showDiag('⚠️ Gagal menghapus peserta: ' + (e && e.message ? e.message : e)); }
+  }
+  // Hapus SEMUA peserta terdaftar beserta SELURUH riwayat kehadirannya, dari SEMUA
+  // fasilitator sekaligus. Tersedia baik di panel Admin maupun panel Fasilitator atas
+  // permintaan — karena dampaknya global (memengaruhi semua fasilitator), tombolnya
+  // selalu dipagari dua lapis konfirmasi (showConfirm + ketik ulang teks) di sisi UI.
+  async function deleteAllParticipants(){
+    try{
+      const pList = await window.storage.list('participant:', true);
+      const pKeys = (pList && pList.keys) || [];
+      await Promise.allSettled(pKeys.map(k => window.storage.delete(k, true)));
+      participantCache.clear();
+      participants = [];
+      // Rekaman kehadiran mengacu ke peserta yang sudah tidak ada, jadi ikut dibersihkan.
+      await deleteAllRecords();
+      records = [];
+    }catch(e){ console.error('gagal menghapus semua peserta', e); showDiag('⚠️ Gagal menghapus semua peserta: ' + (e && e.message ? e.message : e)); }
   }
   async function deleteAllRecords(){
     try{
@@ -2066,6 +2086,28 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     });
   });
 
+  document.getElementById('iDeleteAllParticipants').addEventListener('click', ()=>{
+    const total = participants.length;
+    const msgEl = document.getElementById('iDeleteAllMsg');
+    msgEl.innerHTML = '';
+    showConfirm(`Hapus SEMUA ${total} peserta secara PERMANEN dari seluruh sistem — bukan hanya sesi Anda? Ini akan menghapus data peserta beserta seluruh riwayat kehadirannya di SEMUA ${roleLabelLower()}. Tindakan ini tidak dapat dibatalkan.`, ()=>{
+      showPrompt('Untuk konfirmasi akhir, ketik "HAPUS SEMUA" (huruf besar) lalu tekan Simpan.', '', async (val)=>{
+        if(val !== 'HAPUS SEMUA'){
+          msgEl.innerHTML = '<div class="msg err">Teks konfirmasi tidak sesuai. Penghapusan dibatalkan.</div>';
+          return;
+        }
+        const btn = document.getElementById('iDeleteAllParticipants');
+        btn.disabled = true; btn.textContent = 'Menghapus…';
+        await deleteAllParticipants();
+        btn.disabled = false; btn.textContent = 'Hapus Semua Peserta (Permanen, Semua Sesi)';
+        msgEl.innerHTML = '<div class="msg ok">Semua peserta dan riwayat kehadirannya telah dihapus.</div>';
+        renderInstrPanel();
+        renderPesertaMasterOptions();
+        if(adminAuthed) renderAdminPanel();
+      });
+    });
+  });
+
   document.getElementById('iList').addEventListener('click', async (e)=>{
     const undoBtn = e.target.closest('[data-action="undoMyAttendance"]');
     const editBtn = e.target.closest('[data-action="editParticipant"]');
@@ -2512,6 +2554,28 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     });
   });
 
+  document.getElementById('aDeleteAllParticipants').addEventListener('click', ()=>{
+    const total = participants.length;
+    const msgEl = document.getElementById('aDeleteAllMsg');
+    msgEl.innerHTML = '';
+    showConfirm(`Hapus SEMUA ${total} peserta secara PERMANEN dari seluruh sistem, beserta seluruh riwayat kehadirannya di SEMUA ${roleLabelLower()}? Tindakan ini tidak dapat dibatalkan.`, ()=>{
+      showPrompt('Untuk konfirmasi akhir, ketik "HAPUS SEMUA" (huruf besar) lalu tekan Simpan.', '', async (val)=>{
+        if(val !== 'HAPUS SEMUA'){
+          msgEl.innerHTML = '<div class="msg err">Teks konfirmasi tidak sesuai. Penghapusan dibatalkan.</div>';
+          return;
+        }
+        const btn = document.getElementById('aDeleteAllParticipants');
+        btn.disabled = true; btn.textContent = 'Menghapus…';
+        await deleteAllParticipants();
+        btn.disabled = false; btn.textContent = 'Hapus Semua Peserta (Permanen)';
+        msgEl.innerHTML = '<div class="msg ok">Semua peserta dan riwayat kehadirannya telah dihapus.</div>';
+        renderAdminPanel();
+        renderPesertaMasterOptions();
+        if(!document.getElementById('instrPanel').classList.contains('hidden')) renderInstrPanel();
+      });
+    });
+  });
+
   document.getElementById('aShare').addEventListener('click', ()=>{
     const url = window.location.href;
     const box = document.getElementById('aShareBox');
@@ -2745,14 +2809,21 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     URL.revokeObjectURL(url);
   }
 
-  // bangun daftar roster (semua peserta master + status hadir/tidak hadir) untuk instruktur tertentu, atau semua (null)
+  // bangun daftar roster + status hadir/tidak hadir.
+  // Jika instrIdOrNull diisi (mode Fasilitator): HANYA peserta yang terdaftar PADA
+  // fasilitator itu sendiri (p.instrukturId === instrIdOrNull) yang disertakan — peserta
+  // milik Admin/fasilitator lain TIDAK ikut ke PDF/CSV. Jika instrIdOrNull null (mode Admin
+  // "daftar hadir lengkap"): seluruh peserta dari semua fasilitator disertakan.
   function buildRoster(instrIdOrNull){
     const recByParticipant = new Map();
     records.forEach(r=>{
       if(instrIdOrNull && r.instrukturId !== instrIdOrNull) return;
       if(!recByParticipant.has(r.participantId)) recByParticipant.set(r.participantId, r);
     });
-    return [...participants].sort((a,b)=> a.nama.localeCompare(b.nama, 'id')).map(p=>{
+    const scopedParticipants = instrIdOrNull
+      ? participants.filter(p=>p.instrukturId===instrIdOrNull)
+      : participants;
+    return [...scopedParticipants].sort((a,b)=> a.nama.localeCompare(b.nama, 'id')).map(p=>{
       const r = recByParticipant.get(p.id);
       return {
         nama: p.nama, instansi: p.instansi, jabatan: p.jabatan,
