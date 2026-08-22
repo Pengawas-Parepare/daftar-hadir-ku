@@ -1907,7 +1907,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if(aktif.length===0){
       sel.innerHTML = `<option value="">Belum ada ${roleLabelLower()} aktif</option>`;
     }else{
-      sel.innerHTML = aktif.map(i=>`<option value="${i.id}">${escapeHtml(i.nama)}</option>`).join('');
+      sel.innerHTML = `<option value="">Pilih nama Anda…</option>` +
+        aktif.map(i=>`<option value="${i.id}">${escapeHtml(i.nama)}</option>`).join('');
     }
   }
   document.getElementById('iEnter').addEventListener('click', ()=>{
@@ -1942,6 +1943,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     document.getElementById('iPass').value = '';
     document.getElementById('instrLoginCard').classList.remove('hidden');
     document.getElementById('instrPanel').classList.add('hidden');
+    document.getElementById('iSelect').value = '';
     applyRoleLabels();
   });
   function renderInstrPanel(){
