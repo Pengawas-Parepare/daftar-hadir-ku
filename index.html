@@ -1858,9 +1858,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }
 
     const instr = config.instruktur.find(i=>i.id===instrId);
+    // Kalau peserta ini SUDAH PERNAH presensi di sesi fasilitator yang sama, jangan buat
+    // rekaman baru — timpa rekaman lamanya (pakai id & key storage yang sama) supaya
+    // tidak ada data ganda meskipun peserta mengulang/mengoreksi sebagian datanya.
+    const existingRecord = records.find(r => r.participantId === participant.id && r.instrukturId === instrId);
     const record = {
-      id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
-      nomor: 0,
+      id: existingRecord ? existingRecord.id : ('r_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
+      nomor: existingRecord ? existingRecord.nomor : 0,
       participantId: participant.id,
       nama, instansi, jabatan,
       instrukturId: instrId,
@@ -1875,13 +1879,19 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       msgEl.innerHTML = '<div class="msg err">Gagal mengirim presensi. Periksa koneksi lalu coba lagi.</div>';
       return;
     }
-    record.nomor = records.length + 1;
-    records.push(record); // update cache lokal, tidak perlu reload semua data dari storage
+    if(existingRecord){
+      // update cache lokal di tempat yang sama, jangan tambah entri baru
+      Object.assign(existingRecord, record);
+    }else{
+      record.nomor = records.length + 1;
+      records.push(record); // update cache lokal, tidak perlu reload semua data dari storage
+    }
 
     btn.disabled = false; btn.textContent = 'Kirim Presensi';
 
-    document.getElementById('stampDetail').textContent =
-      `${nama} — hadir bersama ${record.instrukturNama}.`;
+    document.getElementById('stampDetail').textContent = existingRecord
+      ? `${nama} — presensi diperbarui bersama ${record.instrukturNama}.`
+      : `${nama} — hadir bersama ${record.instrukturNama}.`;
     document.getElementById('stampOverlay').classList.add('show');
 
     // reset form
