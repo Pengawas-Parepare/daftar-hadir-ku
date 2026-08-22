@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -879,7 +879,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         </div>
         <div class="card">
           <h2>Ekspor / Impor Peserta (JSON)</h2>
-          <p class="sub">Ekspor seluruh data peserta master ke file JSON sebagai cadangan, atau impor file JSON untuk memulihkan/menambahkan banyak peserta sekaligus. Peserta yang diimpor akan otomatis ditandai Hadir bersama Anda, tanpa tanda tangan.</p>
+          <p class="sub">Ekspor daftar peserta milik sesi Anda saja ke file JSON sebagai cadangan, atau impor file JSON untuk memulihkan/menambahkan banyak peserta sekaligus ke sesi Anda. Peserta yang diimpor akan otomatis ditandai Hadir bersama Anda, tanpa tanda tangan.</p>
           <button class="btn btn-ghost" id="iJsonExport" style="width:100%;">Ekspor Peserta ke JSON</button>
           <label style="display:block; margin-top:16px;">Impor dari file JSON</label>
           <p class="sub" style="margin-top:2px;">Format: larik objek dengan bidang <b>nama</b>, <b>instansi</b>, <b>jabatan</b> — persis seperti hasil Ekspor di atas.</p>
@@ -954,6 +954,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <input type="text" id="aLabelFasilitator" list="labelFasilitatorOptions" placeholder="mis. Fasilitator, Pemateri, Pimpinan, Ketua">
           <datalist id="labelFasilitatorOptions">
             <option value="Fasilitator">
+            <option value="Pengawas Sekolah">
+            <option value="Nara Sumber">
             <option value="Pemateri">
             <option value="Pimpinan">
             <option value="Ketua">
@@ -1363,15 +1365,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     participantCache.delete('participant:' + id);
   }
 
-  // upsert peserta ke master list berdasarkan nama (case-insensitive, trim)
-  function upsertParticipant(nama, instansi, jabatan){
+  // upsert peserta ke daftar milik SATU fasilitator (berdasarkan nama, case-insensitive, trim,
+  // DIBATASI ke fasilitator yang sama). Peserta dengan nama yang sama tetapi didaftarkan pada
+  // fasilitator lain dianggap entri TERPISAH — datanya tidak tercampur/terlihat lintas fasilitator.
+  function upsertParticipant(nama, instansi, jabatan, instrukturId){
     const key = nama.trim().toLowerCase();
-    let p = participants.find(x => x.nama.trim().toLowerCase() === key);
+    let p = participants.find(x => x.nama.trim().toLowerCase() === key && x.instrukturId === instrukturId);
     if(p){
       p.instansi = instansi;
       p.jabatan = jabatan;
     }else{
-      p = { id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), nama: nama.trim(), instansi, jabatan };
+      p = { id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), nama: nama.trim(), instansi, jabatan, instrukturId: instrukturId || null };
       participants.push(p);
     }
     return p;
@@ -1714,11 +1718,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     dl.innerHTML = participants.map(p=>`<option value="${escapeHtml(p.nama)}"></option>`).join('');
   }
 
-  // autofill instansi/jabatan saat nama peserta cocok dengan data tersimpan
+  // autofill instansi/jabatan saat nama peserta cocok dengan data tersimpan —
+  // dicocokkan pada fasilitator yang sedang dipilih peserta saja, supaya tidak
+  // menarik data instansi/jabatan milik peserta lain bernama sama di fasilitator lain.
   document.getElementById('pNama').addEventListener('input', ()=>{
     const val = document.getElementById('pNama').value.trim().toLowerCase();
     if(!val) return;
-    const match = participants.find(p => p.nama.trim().toLowerCase() === val);
+    const instrId = document.getElementById('pInstruktur').value;
+    const match = participants.find(p => p.nama.trim().toLowerCase() === val && p.instrukturId === instrId);
     if(match){
       document.getElementById('pInstansi').value = match.instansi || '';
       document.getElementById('pJabatan').value = match.jabatan || '';
@@ -1808,7 +1815,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     // dan memicu gagal simpan (rate limit). Cache lokal `participants` sudah
     // cukup segar dari polling otomatis (refreshAll) dan dari upsertParticipant
     // di bawah, jadi reload penuh di sini tidak diperlukan lagi.
-    const participant = upsertParticipant(nama, instansi, jabatan);
+    const participant = upsertParticipant(nama, instansi, jabatan, instrId);
     const okP = await saveParticipant(participant);
     if(!okP){
       btn.disabled = false; btn.textContent = 'Kirim Presensi';
@@ -1905,15 +1912,20 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const instr = config.instruktur.find(i=>i.id===currentInstrId);
     if(!instr){ document.getElementById('iLogout').click(); return; }
     document.getElementById('iWelcome').textContent = 'Sesi — ' + instr.nama;
+    // Hanya peserta yang terdaftar PADA fasilitator ini (instrukturId cocok) yang ditampilkan.
+    // Peserta yang terdaftar pada fasilitator lain TIDAK ikut tampil di sini — daftar akan
+    // kosong saat fasilitator lain login untuk memulai sesi, dan setiap fasilitator bisa
+    // login bersamaan dengan kumpulan nama peserta yang berbeda tanpa saling tercampur.
+    const myParticipants = participants.filter(p=>p.instrukturId===currentInstrId);
     const hadirIds = new Set(records.filter(r=>r.instrukturId===currentInstrId).map(r=>r.participantId));
-    const hadirCount = participants.filter(p=>hadirIds.has(p.id)).length;
+    const hadirCount = myParticipants.filter(p=>hadirIds.has(p.id)).length;
     document.getElementById('iCount').textContent = hadirCount;
-    document.getElementById('iAbsent').textContent = Math.max(0, participants.length - hadirCount);
+    document.getElementById('iAbsent').textContent = Math.max(0, myParticipants.length - hadirCount);
     const listEl = document.getElementById('iList');
-    if(participants.length===0){
+    if(myParticipants.length===0){
       listEl.innerHTML = '<div class="empty"><div class="icon">🗒️</div>Belum ada peserta terdaftar.</div>';
     }else{
-      const sorted = [...participants].sort((a,b)=> a.nama.localeCompare(b.nama, 'id'));
+      const sorted = [...myParticipants].sort((a,b)=> a.nama.localeCompare(b.nama, 'id'));
       listEl.innerHTML = sorted.map(p=>{
         const hadir = hadirIds.has(p.id);
         const ketHtml = (!hadir && p.keteranganTidakHadir) ? ` · <span style="color:var(--err);">${escapeHtml(p.keteranganTidakHadir)}</span>` : '';
@@ -2157,7 +2169,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if(id){
       p = updateParticipantById(id, nama, instansi, jabatan, keterangan);
     }else{
-      p = upsertParticipant(nama, instansi, jabatan);
+      p = upsertParticipant(nama, instansi, jabatan, currentInstrId);
       p.keteranganTidakHadir = keterangan;
     }
     const okP = await saveParticipant(p);
@@ -2197,7 +2209,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   // ---------- ekspor peserta master ke file JSON (cadangan) ----------
   document.getElementById('iJsonExport').addEventListener('click', ()=>{
-    const data = participants.map(p=>({ nama: p.nama, instansi: p.instansi, jabatan: p.jabatan }));
+    const data = participants.filter(p=>p.instrukturId===currentInstrId).map(p=>({ nama: p.nama, instansi: p.instansi, jabatan: p.jabatan }));
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2230,7 +2242,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         const instansi = item && item.instansi ? String(item.instansi).trim() : '';
         const jabatan = item && item.jabatan ? String(item.jabatan).trim() : '';
         if(!nama || !instansi || !jabatan){ dilewati++; continue; }
-        const p = upsertParticipant(nama, instansi, jabatan);
+        const p = upsertParticipant(nama, instansi, jabatan, currentInstrId);
         const okP = await saveParticipant(p);
         if(!okP){ dilewati++; continue; }
         const sudahHadir = records.some(r=>r.participantId===p.id && r.instrukturId===currentInstrId);
@@ -2376,12 +2388,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       aListEl.innerHTML = sorted.map(p=>{
         const r = recByParticipant.get(p.id);
         const hadir = !!r;
+        const owner = config.instruktur.find(i=>i.id===p.instrukturId);
+        const ownerLabel = owner ? owner.nama : (p.instrukturId ? '—' : 'belum ditentukan');
         const ketHtml = (!hadir && p.keteranganTidakHadir) ? ` · <span style="color:var(--err);">${escapeHtml(p.keteranganTidakHadir)}</span>` : '';
         return `
         <div class="list-item">
           <div>
             <div class="li-name">${escapeHtml(p.nama)}</div>
-            <div class="li-sub">${escapeHtml(p.instansi)} · ${escapeHtml(p.jabatan)}${hadir ? ' · ' + escapeHtml(roleLabel()) + ': ' + escapeHtml(r.instrukturNama) : ketHtml}</div>
+            <div class="li-sub">${escapeHtml(p.instansi)} · ${escapeHtml(p.jabatan)} · terdaftar pada ${escapeHtml(roleLabelLower())}: ${escapeHtml(ownerLabel)}${hadir ? ' · Hadir bersama ' + escapeHtml(r.instrukturNama) : ketHtml}</div>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
             <span class="badge ${hadir?'badge-on':'badge-off'}"><span class="dot"></span>${hadir?'Hadir':'Tidak Hadir'}</span>
