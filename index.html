@@ -1903,12 +1903,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   // ================= INSTRUKTUR TAB =================
   function renderInstrSelect(){
     const sel = document.getElementById('iSelect');
+    const currentVal = sel.value;
     const aktif = config.instruktur.filter(i=>i.aktif);
     if(aktif.length===0){
       sel.innerHTML = `<option value="">Belum ada ${roleLabelLower()} aktif</option>`;
     }else{
       sel.innerHTML = `<option value="">Pilih nama Anda…</option>` +
         aktif.map(i=>`<option value="${i.id}">${escapeHtml(i.nama)}</option>`).join('');
+      // pertahankan pilihan yang sedang aktif — jangan reset ke default tiap kali
+      // daftar di-refresh (mis. oleh polling otomatis tiap 15 detik).
+      if(currentVal && aktif.some(i=>i.id===currentVal)){
+        sel.value = currentVal;
+      }
     }
   }
   document.getElementById('iEnter').addEventListener('click', ()=>{
