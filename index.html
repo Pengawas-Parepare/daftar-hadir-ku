@@ -818,6 +818,24 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <div class="stat"><div class="num" id="iAbsent">0</div><div class="lbl">Belum Hadir</div></div>
         </div>
         <div class="card">
+          <h2>Sebutan Peran Saya</h2>
+          <p class="sub">Ganti sebutan peran Anda di ruang ini saja — misalnya "Narasumber", "Pengawas Sekolah", atau "Pemateri". Fasilitator lain TIDAK terpengaruh dan bisa memakai sebutan yang berbeda-beda. Perubahan berlaku di daftar pilihan peserta, PDF, dan tampilan lain yang merujuk Anda.</p>
+          <label>Sebutan</label>
+          <input type="text" id="iLabelFasilitator" list="labelFasilitatorOptions" placeholder="mis. Fasilitator, Pemateri, Pimpinan, Nara Sumber, Pengawas Sekolah">
+          <datalist id="labelFasilitatorOptions">
+            <option value="Fasilitator">
+            <option value="Pengawas Sekolah">
+            <option value="Nara Sumber">
+            <option value="Pemateri">
+            <option value="Pimpinan">
+            <option value="Ketua">
+            <option value="Instruktur">
+            <option value="Narasumber">
+          </datalist>
+          <button class="btn btn-gold" id="iSaveLabel" style="margin-top:14px;">Simpan Sebutan</button>
+          <div id="iLabelMsg"></div>
+        </div>
+        <div class="card">
           <h2>Waktu Absensi</h2>
           <p class="sub" id="iWaktuSub">Atur jendela waktu peserta dapat mengisi presensi dengan Anda sebagai fasilitator. Kosongkan jika tidak ingin membatasi waktu.</p>
           <div id="iWaktuStatus" style="margin-bottom:12px;"></div>
@@ -947,25 +965,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <label>Sesi</label>
           <input type="text" id="aSesi" placeholder="mis. Sesi 1 (08.00–10.00)">
           <button class="btn btn-gold" id="aSaveKegiatan" style="margin-top:14px;">Simpan Data Kegiatan</button>
-        </div>
-
-        <div class="card">
-          <h2>Sebutan untuk "Fasilitator"</h2>
-          <p class="sub">Ganti sebutan peran ini sesuai kegiatan Anda — misalnya "Pemateri", "Pimpinan", atau "Ketua". Perubahan berlaku di seluruh tampilan, dokumen CSV, dan PDF.</p>
-          <label>Sebutan</label>
-          <input type="text" id="aLabelFasilitator" list="labelFasilitatorOptions" placeholder="mis. Fasilitator, Pemateri, Pimpinan, Ketua">
-          <datalist id="labelFasilitatorOptions">
-            <option value="Fasilitator">
-            <option value="Pengawas Sekolah">
-            <option value="Nara Sumber">
-            <option value="Pemateri">
-            <option value="Pimpinan">
-            <option value="Ketua">
-            <option value="Instruktur">
-            <option value="Narasumber">
-          </datalist>
-          <button class="btn btn-gold" id="aSaveLabel" style="margin-top:14px;">Simpan Sebutan</button>
-          <div id="aLabelMsg"></div>
         </div>
 
         <div class="card">
@@ -1203,18 +1202,21 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       await saveConfig();
     }
     if(!Array.isArray(config.instruktur)) config.instruktur = [];
-    // backfill field baru (materi/pin) untuk config lama yang belum punya field ini
+    // backfill field baru (materi/pin/labelPeran) untuk config lama yang belum punya field ini
     config.instruktur.forEach(i=>{
       if(typeof i.materi !== 'string') i.materi = '';
       if(typeof i.pin !== 'string') i.pin = '';
       if(typeof i.kegiatan !== 'string') i.kegiatan = '';
       if(typeof i.tanggal !== 'string') i.tanggal = '';
       if(typeof i.sesi !== 'string') i.sesi = '';
+      // sebutan peran milik fasilitator ini sendiri (mis. "Narasumber", "Pengawas Sekolah").
+      // Kosong = pakai sebutan default ("Fasilitator"). Diatur masing-masing fasilitator
+      // dari ruangnya sendiri, TIDAK memengaruhi fasilitator lain.
+      if(typeof i.labelPeran !== 'string') i.labelPeran = '';
     });
     if(!config.adminPassword) config.adminPassword = DEFAULT_CONFIG.adminPassword;
     if(!config.adminEmail) config.adminEmail = DEFAULT_CONFIG.adminEmail;
     if(typeof config.catatan !== 'string') config.catatan = '';
-    if(!config.labelFasilitator || typeof config.labelFasilitator !== 'string') config.labelFasilitator = DEFAULT_CONFIG.labelFasilitator;
   }
   async function saveConfig(){
     try{ await window.storage.set('app-config', JSON.stringify(config), true); }
@@ -1483,13 +1485,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if(instr.absenMulai){
       const mulai = new Date(instr.absenMulai);
       if(now < mulai){
-        return { ok:false, reason: `Absensi untuk ${roleLabelLower()} ini belum dibuka. Absensi mulai ${fmtDateTime(instr.absenMulai)}.` };
+        return { ok:false, reason: `Absensi untuk ${roleLabelLower(instr)} ini belum dibuka. Absensi mulai ${fmtDateTime(instr.absenMulai)}.` };
       }
     }
     if(instr.absenSelesai){
       const selesai = new Date(instr.absenSelesai);
       if(now > selesai){
-        return { ok:false, reason: `Absensi untuk ${roleLabelLower()} ini sudah ditutup pada ${fmtDateTime(instr.absenSelesai)}.` };
+        return { ok:false, reason: `Absensi untuk ${roleLabelLower(instr)} ini sudah ditutup pada ${fmtDateTime(instr.absenSelesai)}.` };
       }
     }
     return { ok:true };
@@ -1680,7 +1682,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     sel.innerHTML = `<option value="">Pilih ${roleLabelLower()} aktif…</option>` +
       aktif.map(i=>{
         const win = checkAbsenWindow(i);
-        const label = win.ok ? escapeHtml(i.nama) : `${escapeHtml(i.nama)} (Absensi ditutup)`;
+        const namaPeran = `${escapeHtml(i.nama)} — ${escapeHtml(roleLabel(i))}`;
+        const label = win.ok ? namaPeran : `${namaPeran} (Absensi ditutup)`;
         return `<option value="${i.id}">${label}</option>`;
       }).join('');
     if(aktif.length===0){
@@ -1756,29 +1759,40 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  // ---------- sebutan "Fasilitator" yang bisa diganti admin (mis. Pemateri/Pimpinan/Ketua) ----------
-  function roleLabel(){
-    return (config && config.labelFasilitator) ? config.labelFasilitator : 'Fasilitator';
+  // ---------- sebutan "Fasilitator" per fasilitator (mis. Narasumber/Pengawas Sekolah/Pemateri) ----------
+  // Setiap fasilitator mengatur sebutan perannya SENDIRI dari ruangnya masing-masing
+  // (instr.labelPeran). Kosong = pakai sebutan default "Fasilitator". Teks umum yang tidak
+  // merujuk fasilitator tertentu (nama tab, halaman login, panel Admin, dsb) selalu memakai
+  // sebutan default, supaya tidak berubah-ubah tergantung siapa yang sedang login.
+  function roleLabel(instr){
+    if(instr && instr.labelPeran && instr.labelPeran.trim()) return instr.labelPeran.trim();
+    return DEFAULT_CONFIG.labelFasilitator;
   }
-  function roleLabelLower(){
-    return roleLabel().toLowerCase();
+  function roleLabelLower(instr){
+    return roleLabel(instr).toLowerCase();
   }
   function applyRoleLabels(){
-    const label = roleLabel();
-    const labelLower = roleLabelLower();
+    const label = DEFAULT_CONFIG.labelFasilitator; // sebutan umum/generik
+    const labelLower = label.toLowerCase();
+    const currentInstr = config.instruktur.find(i=>i.id===currentInstrId) || null;
+    const myLabel = roleLabel(currentInstr); // sebutan milik fasilitator yang sedang login di ruang ini
+    const myLabelLower = myLabel.toLowerCase();
+    document.getElementById('iLabelFasilitator').value = currentInstr ? (currentInstr.labelPeran || '') : '';
     document.getElementById('tabBtnInstruktur').textContent = label;
     document.getElementById('pInstrLabel').textContent = `${label} Sesi Ini`;
     document.getElementById('pPinLabel').textContent = `Kode Presensi (PIN) dari ${label}`;
     document.getElementById('pPin').placeholder = `Minta kode ini ke ${labelLower}`;
     document.getElementById('instrLoginTitle').textContent = `Masuk sebagai ${label}`;
     document.getElementById('instrLoginSub').textContent = `Hanya ${labelLower} yang diaktifkan oleh Admin Utama yang muncul di daftar ini.`;
-    document.getElementById('iWaktuSub').textContent = `Atur jendela waktu peserta dapat mengisi presensi dengan Anda sebagai ${labelLower}. Kosongkan jika tidak ingin membatasi waktu.`;
-    document.getElementById('iMateriSub').textContent = `Judul materi tampil untuk peserta saat memilih Anda sebagai ${labelLower}. Kode Presensi (PIN) adalah kode singkat yang sama untuk semua peserta di sesi Anda — bagikan secara lisan/tertulis saat sesi berlangsung. Kosongkan PIN jika tidak ingin mewajibkan kode.`;
-    document.getElementById('iSigTitle').textContent = `Tanda Tangan ${label}`;
+    // teks di bawah ini khusus TAMPIL di dalam ruang fasilitator yang sedang login,
+    // jadi memakai sebutan milik fasilitator itu sendiri (myLabel), bukan yang generik.
+    document.getElementById('iWaktuSub').textContent = `Atur jendela waktu peserta dapat mengisi presensi dengan Anda sebagai ${myLabelLower}. Kosongkan jika tidak ingin membatasi waktu.`;
+    document.getElementById('iMateriSub').textContent = `Judul materi tampil untuk peserta saat memilih Anda sebagai ${myLabelLower}. Kode Presensi (PIN) adalah kode singkat yang sama untuk semua peserta di sesi Anda — bagikan secara lisan/tertulis saat sesi berlangsung. Kosongkan PIN jika tidak ingin mewajibkan kode.`;
+    document.getElementById('iSigTitle').textContent = `Tanda Tangan ${myLabel}`;
     document.getElementById('adminLoginSub').textContent = `Admin Utama mengatur data kegiatan, ${labelLower} aktif, dan seluruh rekap kehadiran.`;
     document.getElementById('aCountInstrLbl').textContent = `${label} Aktif`;
     document.getElementById('aFasilitatorCardTitle').textContent = label;
-    document.getElementById('aFasilitatorCardSub').textContent = `Aktifkan ${labelLower} yang bertugas pada sesi ini. Hanya yang aktif muncul di pilihan peserta. Setiap ${labelLower} perlu kata sandi sendiri untuk masuk.`;
+    document.getElementById('aFasilitatorCardSub').textContent = `Aktifkan ${labelLower} yang bertugas pada sesi ini. Hanya yang aktif muncul di pilihan peserta. Setiap ${labelLower} mengatur sebutan perannya sendiri (mis. Narasumber, Pengawas Sekolah) dan perlu kata sandi sendiri untuk masuk.`;
     document.getElementById('aNewInstr').placeholder = `Nama ${labelLower} baru`;
     document.getElementById('aCatatanCardTitle').textContent = `Catatan ${label}`;
     document.getElementById('navLabelInstruktur').textContent = label;
@@ -1816,11 +1830,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if(selectedInstr && selectedInstr.pin){
       const pinInput = (document.getElementById('pPin').value || '').trim();
       if(!pinInput){
-        msgEl.innerHTML = `<div class="msg err">Masukkan Kode Presensi (PIN) dari ${roleLabelLower()}.</div>`;
+        msgEl.innerHTML = `<div class="msg err">Masukkan Kode Presensi (PIN) dari ${roleLabelLower(selectedInstr)}.</div>`;
         return;
       }
       if(pinInput !== selectedInstr.pin){
-        msgEl.innerHTML = `<div class="msg err">Kode Presensi (PIN) salah. Tanyakan kode yang benar ke ${roleLabelLower()}.</div>`;
+        msgEl.innerHTML = `<div class="msg err">Kode Presensi (PIN) salah. Tanyakan kode yang benar ke ${roleLabelLower(selectedInstr)}.</div>`;
         return;
       }
     }
@@ -1919,6 +1933,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     iWaktuDirty = false;
     document.getElementById('instrLoginCard').classList.add('hidden');
     document.getElementById('instrPanel').classList.remove('hidden');
+    applyRoleLabels();
     renderInstrPanel();
     loadFasilitatorSignature();
   });
@@ -1927,6 +1942,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     document.getElementById('iPass').value = '';
     document.getElementById('instrLoginCard').classList.remove('hidden');
     document.getElementById('instrPanel').classList.add('hidden');
+    applyRoleLabels();
   });
   function renderInstrPanel(){
     const instr = config.instruktur.find(i=>i.id===currentInstrId);
@@ -2371,27 +2387,30 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     document.getElementById('aTanggal').value = config.tanggal || '';
     document.getElementById('aSesi').value = config.sesi || '';
     document.getElementById('aNewEmail').placeholder = 'Saat ini: ' + (config.adminEmail || '-');
-    document.getElementById('aLabelFasilitator').value = config.labelFasilitator || DEFAULT_CONFIG.labelFasilitator;
   }
 
-  document.getElementById('aSaveLabel').addEventListener('click', async ()=>{
-    const val = document.getElementById('aLabelFasilitator').value.trim();
-    const msgEl = document.getElementById('aLabelMsg');
-    if(!val){
-      msgEl.innerHTML = '<div class="msg err">Sebutan tidak boleh kosong.</div>';
-      return;
-    }
-    const btn = document.getElementById('aSaveLabel');
+  // Sebutan peran kini per-fasilitator (instr.labelPeran) — hanya berlaku untuk fasilitator
+  // yang sedang login di ruang ini, TIDAK memengaruhi fasilitator lain.
+  document.getElementById('iSaveLabel').addEventListener('click', async ()=>{
+    const val = document.getElementById('iLabelFasilitator').value.trim();
+    const msgEl = document.getElementById('iLabelMsg');
+    const btn = document.getElementById('iSaveLabel');
     btn.disabled = true; btn.textContent = 'Menyimpan…';
     await loadConfig();
-    config.labelFasilitator = val;
+    const instr = config.instruktur.find(i=>i.id===currentInstrId);
+    if(!instr){
+      btn.disabled = false; btn.textContent = 'Simpan Sebutan';
+      msgEl.innerHTML = '<div class="msg err">Sesi Anda tidak ditemukan, silakan masuk ulang.</div>';
+      return;
+    }
+    instr.labelPeran = val; // kosong = pakai sebutan default "Fasilitator"
     await saveConfig();
     applyRoleLabels();
-    renderAdminPanel();
+    if(adminAuthed) renderAdminPanel();
     renderPesertaInstrOptions();
     renderInstrSelect();
     btn.disabled = false; btn.textContent = 'Simpan Sebutan';
-    msgEl.innerHTML = '<div class="msg ok">Sebutan tersimpan.</div>';
+    msgEl.innerHTML = `<div class="msg ok">Sebutan Anda tersimpan sebagai "${escapeHtml(roleLabel(instr))}".</div>`;
   });
 
   function renderAdminPanel(){
@@ -2624,7 +2643,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     let y = startY;
     doc.setFont('helvetica','bold');
     doc.setFontSize(10);
-    doc.text(`Tanda Tangan ${roleLabel()}`, pageWidth - marginX, y, { align: 'right' });
+    // kalau semua tanda tangan di sini milik fasilitator dengan sebutan yang sama, pakai sebutan
+    // itu di judul; kalau campuran (mis. PDF gabungan Admin), pakai sebutan default umum.
+    const uniqueLabels = [...new Set(signList.map(i=>roleLabel(i)))];
+    const headerLabel = uniqueLabels.length===1 ? uniqueLabels[0] : DEFAULT_CONFIG.labelFasilitator;
+    doc.text(`Tanda Tangan ${headerLabel}`, pageWidth - marginX, y, { align: 'right' });
     y += 16;
 
     const totalRows = Math.ceil(signList.length / perRow);
@@ -2660,12 +2683,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         doc.setFont('helvetica','bold');
         doc.setFontSize(9.5);
         doc.setTextColor(27,42,74);
-        doc.text(instr.nama || roleLabel(), x, blockTop+70);
+        doc.text(instr.nama || roleLabel(instr), x, blockTop+70);
 
         doc.setFont('helvetica','normal');
         doc.setFontSize(8);
         doc.setTextColor(120);
-        doc.text(roleLabel(), x, blockTop+82);
+        doc.text(roleLabel(instr), x, blockTop+82);
         doc.setTextColor(0);
       });
     }
@@ -2673,7 +2696,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return y + totalRows*92;
   }
 
-  function generatePdf(rows, judulTambahan, filename, signList, materiInfo, facilitatorInfo, sessionOverride){
+  function generatePdf(rows, judulTambahan, filename, signList, materiInfo, facilitatorInfo, sessionOverride, facilitatorLabelText){
     if(rows.length===0){ showDiag('Belum ada peserta terdaftar untuk diunduh.'); return; }
     if(!window.jspdf){ showDiag('⚠️ Gagal memuat modul PDF. Coba muat ulang halaman.'); return; }
     try{
@@ -2698,7 +2721,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         doc.setFont('helvetica','bold');
         const parts = [];
         if(materiInfo) parts.push(`Materi: ${materiInfo}`);
-        if(facilitatorInfo) parts.push(`${roleLabel()}: ${facilitatorInfo}`);
+        if(facilitatorInfo) parts.push(`${facilitatorLabelText || DEFAULT_CONFIG.labelFasilitator}: ${facilitatorInfo}`);
         doc.text(parts.join('   |   '), 40, subtitleY);
         doc.setFont('helvetica','normal');
       }
@@ -2784,7 +2807,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       return;
     }
     const signList = [{ nama: instr.nama, signature: instr.signature }];
-    generatePdf(buildRoster(currentInstrId), '', `presensi_${instr.nama.replace(/\s+/g,'_')}.pdf`, signList, instr.materi || '', instr.nama, { kegiatan: instr.kegiatan, tanggal: instr.tanggal, sesi: instr.sesi });
+    generatePdf(buildRoster(currentInstrId), '', `presensi_${instr.nama.replace(/\s+/g,'_')}.pdf`, signList, instr.materi || '', instr.nama, { kegiatan: instr.kegiatan, tanggal: instr.tanggal, sesi: instr.sesi }, roleLabel(instr));
   });
 
   document.getElementById('aExportPdf').addEventListener('click', ()=>{
