@@ -1246,17 +1246,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         if(!currentKeySet.has(cachedKey)) recordCache.delete(cachedKey);
       }
 
-      // Ambil HANYA key yang baru muncul sejak polling terakhir. Rekaman
-      // presensi bersifat tetap (tidak pernah diubah setelah dibuat), jadi
-      // aman untuk tidak mengambil ulang key yang sudah ada di cache.
-      const newKeys = keys.filter(k => !recordCache.has(k));
-      if(newKeys.length){
-        const results = await Promise.allSettled(newKeys.map(k => window.storage.get(k, true)));
+      // CATATAN: record presensi SEKARANG BISA ditimpa (bukan lagi selalu tetap) —
+      // saat peserta mengulang/mengoreksi presensi di sesi yang sama, rekaman lamanya
+      // ditimpa di key storage yang sama (lihat pSubmit). Karena itu kita tidak boleh
+      // hanya mengambil key yang "baru muncul"; kita ambil ulang SEMUA key supaya
+      // perubahan dari perangkat/sesi browser lain selalu ikut ter-refresh di sini.
+      if(keys.length){
+        const results = await Promise.allSettled(keys.map(k => window.storage.get(k, true)));
         results.forEach((r, idx) => {
           if(r.status === 'fulfilled' && r.value){
             try{
               const rec = JSON.parse(r.value.value);
-              if(rec) recordCache.set(newKeys[idx], rec);
+              if(rec) recordCache.set(keys[idx], rec);
             }catch(_){ /* abaikan entri rusak */ }
           }
         });
@@ -1651,12 +1652,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       msgEl.innerHTML = '<div class="msg err">Mohon bubuhkan tanda tangan terlebih dahulu.</div>';
       return;
     }
-    const instr = config.instruktur.find(i=>i.id===currentInstrId);
-    if(!instr){ return; }
     const btn = document.getElementById('iSigSave');
     btn.disabled = true; btn.textContent = 'Menyimpan…';
-    instr.signature = iCanvas.toDataURL('image/png');
-    await saveConfig();
+    const sigData = iCanvas.toDataURL('image/png');
+    // muat config terbaru dulu supaya tidak menimpa perubahan lain, lalu terapkan tanda tangan di atasnya
+    await loadConfig();
+    const freshInstr = config.instruktur.find(i=>i.id===currentInstrId);
+    if(freshInstr){
+      freshInstr.signature = sigData;
+      await saveConfig();
+    }
     iSigDirty = false;
     btn.disabled = false; btn.textContent = 'Simpan Tanda Tangan';
     msgEl.innerHTML = '<div class="msg ok">Tanda tangan tersimpan. Akan otomatis muncul di PDF.</div>';
@@ -2361,7 +2366,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if(adminAuthed) renderAdminPanel();
   });
   document.getElementById('iSaveCatatan').addEventListener('click', async ()=>{
-    config.catatan = document.getElementById('iCatatan').value;
+    const catatanVal = document.getElementById('iCatatan').value;
+    await loadConfig();
+    config.catatan = catatanVal;
     await saveConfig();
     showDiag('Catatan tersimpan.');
   });
@@ -2513,9 +2520,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   });
 
   document.getElementById('aSaveKegiatan').addEventListener('click', async ()=>{
-    config.kegiatan = document.getElementById('aKegiatan').value.trim() || DEFAULT_CONFIG.kegiatan;
-    config.tanggal = document.getElementById('aTanggal').value.trim() || '-';
-    config.sesi = document.getElementById('aSesi').value.trim() || '-';
+    const kegiatanVal = document.getElementById('aKegiatan').value.trim() || DEFAULT_CONFIG.kegiatan;
+    const tanggalVal = document.getElementById('aTanggal').value.trim() || '-';
+    const sesiVal = document.getElementById('aSesi').value.trim() || '-';
+    await loadConfig();
+    config.kegiatan = kegiatanVal;
+    config.tanggal = tanggalVal;
+    config.sesi = sesiVal;
     await saveConfig();
     renderHeader();
     const msg = document.createElement('div');
@@ -2532,7 +2543,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const password = passInput.value;
     if(!nama){ showDiag(`Isi nama ${roleLabelLower()}.`); return; }
     if(!password){ showDiag(`Isi kata sandi untuk ${roleLabelLower()} baru.`); return; }
-    config.instruktur.push({id: 'i_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), nama, password, aktif:true, materi:'', pin:'', kegiatan:'', tanggal:'', sesi:''});
+    // muat config terbaru dulu supaya tidak menimpa perubahan fasilitator lain yang baru disimpan
+    await loadConfig();
+    config.instruktur.push({id: 'i_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), nama, password, aktif:true, materi:'', pin:'', kegiatan:'', tanggal:'', sesi:'', labelPeran:''});
     input.value = '';
     passInput.value = '';
     await saveConfig();
@@ -2545,24 +2558,34 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if(!btn) return;
     const id = btn.dataset.id;
     const action = btn.dataset.action;
-    const idx = config.instruktur.findIndex(i=>i.id===id);
-    if(idx===-1) return;
     if(action==='toggle'){
+      // muat config terbaru dulu supaya tidak menimpa perubahan fasilitator lain yang baru disimpan
+      await loadConfig();
+      const idx = config.instruktur.findIndex(i=>i.id===id);
+      if(idx===-1){ renderAdminPanel(); return; }
       config.instruktur[idx].aktif = !config.instruktur[idx].aktif;
       await saveConfig();
       renderAdminPanel();
       renderPesertaInstrOptions(); renderInstrSelect();
     }else if(action==='del'){
-      showConfirm(`Hapus fasilitator "${config.instruktur[idx].nama}"?`, async ()=>{
-        config.instruktur.splice(idx,1);
+      const namaSaatIni = (config.instruktur.find(i=>i.id===id) || {}).nama || '';
+      showConfirm(`Hapus fasilitator "${namaSaatIni}"?`, async ()=>{
+        await loadConfig();
+        const idx2 = config.instruktur.findIndex(i=>i.id===id);
+        if(idx2===-1){ renderAdminPanel(); return; }
+        config.instruktur.splice(idx2,1);
         await saveConfig();
         renderAdminPanel();
         renderPesertaInstrOptions(); renderInstrSelect();
       });
     }else if(action==='pass'){
-      showPrompt(`Kata sandi baru untuk "${config.instruktur[idx].nama}":`, '', async (val)=>{
+      const namaSaatIni = (config.instruktur.find(i=>i.id===id) || {}).nama || '';
+      showPrompt(`Kata sandi baru untuk "${namaSaatIni}":`, '', async (val)=>{
         if(!val) return;
-        config.instruktur[idx].password = val;
+        await loadConfig();
+        const idx3 = config.instruktur.findIndex(i=>i.id===id);
+        if(idx3===-1) return;
+        config.instruktur[idx3].password = val;
         await saveConfig();
         showDiag('Kata sandi diperbarui.');
       });
@@ -2586,6 +2609,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const newPass = document.getElementById('aNewPass').value;
     const currentPassConfirm = document.getElementById('aCurrentPassConfirm').value;
 
+    // muat config terbaru dulu supaya verifikasi password akurat & tidak menimpa perubahan lain
+    await loadConfig();
     if(currentPassConfirm !== config.adminPassword){
       msgEl.innerHTML = '<div class="msg err">Kata sandi saat ini salah.</div>';
       return;
