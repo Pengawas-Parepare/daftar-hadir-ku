@@ -872,7 +872,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <div id="iList"></div>
           <button class="btn btn-danger" id="iResetSesi" style="margin-top:14px; width:100%;">Kosongkan Peserta — Mulai Sesi Baru</button>
           <div id="iResetMsg"></div>
-          <button class="btn btn-danger" id="iDeleteAllParticipants" style="margin-top:10px; width:100%;">Hapus Semua Peserta (Permanen, Semua Sesi)</button>
+          <button class="btn btn-danger" id="iDeleteAllParticipants" style="margin-top:10px; width:100%;">Hapus Semua Peserta Saya (Permanen, Sesi Ini)</button>
           <div id="iDeleteAllMsg"></div>
         </div>
         <div class="card">
@@ -1307,9 +1307,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }catch(e){ console.error('gagal hapus peserta total', e); showDiag('⚠️ Gagal menghapus peserta: ' + (e && e.message ? e.message : e)); }
   }
   // Hapus SEMUA peserta terdaftar beserta SELURUH riwayat kehadirannya, dari SEMUA
-  // fasilitator sekaligus. Tersedia baik di panel Admin maupun panel Fasilitator atas
-  // permintaan — karena dampaknya global (memengaruhi semua fasilitator), tombolnya
-  // selalu dipagari dua lapis konfirmasi (showConfirm + ketik ulang teks) di sisi UI.
+  // fasilitator sekaligus. HANYA dipakai dari panel Admin (reset total sistem).
   async function deleteAllParticipants(){
     try{
       const pList = await window.storage.list('participant:', true);
@@ -1321,6 +1319,23 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       await deleteAllRecords();
       records = [];
     }catch(e){ console.error('gagal menghapus semua peserta', e); showDiag('⚠️ Gagal menghapus semua peserta: ' + (e && e.message ? e.message : e)); }
+  }
+  // Hapus SEMUA peserta beserta riwayat kehadirannya, TAPI HANYA yang terdaftar pada
+  // SATU fasilitator (instrId) — peserta & rekaman milik fasilitator lain TIDAK disentuh.
+  // Dipakai dari panel Fasilitator supaya setiap fasilitator hanya bisa mengosongkan
+  // datanya sendiri, tidak bisa menghapus punya fasilitator lain.
+  async function deleteParticipantsByInstruktur(instrId){
+    try{
+      const targetKeys = [];
+      for(const [key, p] of participantCache.entries()){
+        if(p && p.instrukturId === instrId) targetKeys.push(key);
+      }
+      await Promise.allSettled(targetKeys.map(k => window.storage.delete(k, true)));
+      targetKeys.forEach(k => participantCache.delete(k));
+      participants = Array.from(participantCache.values());
+      // riwayat kehadiran milik fasilitator ini juga ikut dibersihkan
+      await deleteRecordsByInstruktur(instrId);
+    }catch(e){ console.error('gagal menghapus peserta sesi', e); showDiag('⚠️ Gagal menghapus peserta sesi: ' + (e && e.message ? e.message : e)); }
   }
   async function deleteAllRecords(){
     try{
@@ -2132,10 +2147,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   });
 
   document.getElementById('iDeleteAllParticipants').addEventListener('click', ()=>{
-    const total = participants.length;
+    const instr = config.instruktur.find(i=>i.id===currentInstrId);
+    if(!instr) return;
+    const total = participants.filter(p=>p.instrukturId===currentInstrId).length;
     const msgEl = document.getElementById('iDeleteAllMsg');
     msgEl.innerHTML = '';
-    showConfirm(`Hapus SEMUA ${total} peserta secara PERMANEN dari seluruh sistem — bukan hanya sesi Anda? Ini akan menghapus data peserta beserta seluruh riwayat kehadirannya di SEMUA ${roleLabelLower()}. Tindakan ini tidak dapat dibatalkan.`, ()=>{
+    showConfirm(`Hapus SEMUA ${total} peserta milik sesi Anda ("${instr.nama}") secara PERMANEN? Fasilitator lain TIDAK terpengaruh — peserta & riwayat kehadiran mereka tetap aman. Tindakan ini tidak dapat dibatalkan.`, ()=>{
       showPrompt('Untuk konfirmasi akhir, ketik "HAPUS SEMUA" (huruf besar) lalu tekan Simpan.', '', async (val)=>{
         if(val !== 'HAPUS SEMUA'){
           msgEl.innerHTML = '<div class="msg err">Teks konfirmasi tidak sesuai. Penghapusan dibatalkan.</div>';
@@ -2143,9 +2160,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         }
         const btn = document.getElementById('iDeleteAllParticipants');
         btn.disabled = true; btn.textContent = 'Menghapus…';
-        await deleteAllParticipants();
-        btn.disabled = false; btn.textContent = 'Hapus Semua Peserta (Permanen, Semua Sesi)';
-        msgEl.innerHTML = '<div class="msg ok">Semua peserta dan riwayat kehadirannya telah dihapus.</div>';
+        await deleteParticipantsByInstruktur(currentInstrId);
+        btn.disabled = false; btn.textContent = 'Hapus Semua Peserta Saya (Permanen, Sesi Ini)';
+        msgEl.innerHTML = '<div class="msg ok">Semua peserta di sesi Anda telah dihapus. Fasilitator lain tidak terpengaruh.</div>';
         renderInstrPanel();
         renderPesertaMasterOptions();
         if(adminAuthed) renderAdminPanel();
