@@ -818,6 +818,24 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <div class="stat"><div class="num" id="iAbsent">0</div><div class="lbl">Belum Hadir</div></div>
         </div>
         <div class="card">
+          <h2>Sebutan Peran Saya</h2>
+          <p class="sub">Ganti sebutan peran Anda di ruang ini saja — misalnya "Narasumber", "Pengawas Sekolah", atau "Pemateri". Fasilitator lain TIDAK terpengaruh dan bisa memakai sebutan yang berbeda-beda. Perubahan berlaku di daftar pilihan peserta, PDF, dan tampilan lain yang merujuk Anda.</p>
+          <label>Sebutan</label>
+          <input type="text" id="iLabelFasilitator" list="labelFasilitatorOptions" placeholder="mis. Fasilitator, Pemateri, Pimpinan, Nara Sumber, Pengawas Sekolah">
+          <datalist id="labelFasilitatorOptions">
+            <option value="Fasilitator">
+            <option value="Pengawas Sekolah">
+            <option value="Nara Sumber">
+            <option value="Pemateri">
+            <option value="Pimpinan">
+            <option value="Ketua">
+            <option value="Instruktur">
+            <option value="Narasumber">
+          </datalist>
+          <button class="btn btn-gold" id="iSaveLabel" style="margin-top:14px;">Simpan Sebutan</button>
+          <div id="iLabelMsg"></div>
+        </div>
+        <div class="card">
           <h2>Waktu Absensi</h2>
           <p class="sub" id="iWaktuSub">Atur jendela waktu peserta dapat mengisi presensi dengan Anda sebagai fasilitator. Kosongkan jika tidak ingin membatasi waktu.</p>
           <div id="iWaktuStatus" style="margin-bottom:12px;"></div>
@@ -850,10 +868,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         </div>
         <div class="card">
           <h2 id="iWelcome">Sesi</h2>
-          <p class="sub">Daftar peserta terdaftar, status hadir sesi Anda diperbarui otomatis. ✎ mengedit data peserta, ✓ menandai hadir manual (tanpa tanda tangan), ✕ membatalkan kehadiran di sesi Anda saja — fasilitator lain tidak terpengaruh. Untuk menghapus peserta secara permanen dari semua sesi, hubungi Admin Utama.</p>
+          <p class="sub">Daftar peserta terdaftar, status hadir sesi Anda diperbarui otomatis. ✎ mengedit data peserta, ✓ menandai hadir manual (tanpa tanda tangan), ✕ membatalkan kehadiran di sesi Anda saja — fasilitator lain tidak terpengaruh.</p>
           <div id="iList"></div>
           <button class="btn btn-danger" id="iResetSesi" style="margin-top:14px; width:100%;">Kosongkan Peserta — Mulai Sesi Baru</button>
           <div id="iResetMsg"></div>
+          <button class="btn btn-danger" id="iDeleteAllParticipants" style="margin-top:10px; width:100%;">Hapus Semua Peserta (Permanen, Semua Sesi)</button>
+          <div id="iDeleteAllMsg"></div>
         </div>
         <div class="card">
           <h2>Tambah / Edit Peserta Manual</h2>
@@ -879,7 +899,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         </div>
         <div class="card">
           <h2>Ekspor / Impor Peserta (JSON)</h2>
-          <p class="sub">Ekspor seluruh data peserta master ke file JSON sebagai cadangan, atau impor file JSON untuk memulihkan/menambahkan banyak peserta sekaligus. Peserta yang diimpor akan otomatis ditandai Hadir bersama Anda, tanpa tanda tangan.</p>
+          <p class="sub">Ekspor daftar peserta milik sesi Anda saja ke file JSON sebagai cadangan, atau impor file JSON untuk memulihkan/menambahkan banyak peserta sekaligus ke sesi Anda. Peserta yang diimpor akan otomatis ditandai Hadir bersama Anda, tanpa tanda tangan.</p>
           <button class="btn btn-ghost" id="iJsonExport" style="width:100%;">Ekspor Peserta ke JSON</button>
           <label style="display:block; margin-top:16px;">Impor dari file JSON</label>
           <p class="sub" style="margin-top:2px;">Format: larik objek dengan bidang <b>nama</b>, <b>instansi</b>, <b>jabatan</b> — persis seperti hasil Ekspor di atas.</p>
@@ -948,23 +968,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         </div>
 
         <div class="card">
-          <h2>Sebutan untuk "Fasilitator"</h2>
-          <p class="sub">Ganti sebutan peran ini sesuai kegiatan Anda — misalnya "Pemateri", "Pimpinan", atau "Ketua". Perubahan berlaku di seluruh tampilan, dokumen CSV, dan PDF.</p>
-          <label>Sebutan</label>
-          <input type="text" id="aLabelFasilitator" list="labelFasilitatorOptions" placeholder="mis. Fasilitator, Pemateri, Pimpinan, Ketua">
-          <datalist id="labelFasilitatorOptions">
-            <option value="Fasilitator">
-            <option value="Pemateri">
-            <option value="Pimpinan">
-            <option value="Ketua">
-            <option value="Instruktur">
-            <option value="Narasumber">
-          </datalist>
-          <button class="btn btn-gold" id="aSaveLabel" style="margin-top:14px;">Simpan Sebutan</button>
-          <div id="aLabelMsg"></div>
-        </div>
-
-        <div class="card">
           <h2 id="aFasilitatorCardTitle">Fasilitator</h2>
           <p class="sub" id="aFasilitatorCardSub">Aktifkan fasilitator yang bertugas pada sesi ini. Hanya yang aktif muncul di pilihan peserta. Setiap fasilitator perlu kata sandi sendiri untuk masuk.</p>
           <div id="aInstrList"></div>
@@ -984,8 +987,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <h2>Rekap Kehadiran</h2>
           <p class="sub">Seluruh peserta terdaftar dan status kehadirannya.</p>
           <div id="aList"></div>
+          <button class="btn btn-danger" id="aDeleteAllParticipants" style="margin-top:14px; width:100%;">Hapus Semua Peserta (Permanen)</button>
+          <div id="aDeleteAllMsg"></div>
         </div>
 
+        <div class="card">
+          <h2>Unduh Rekap</h2>
+          <p class="sub">Pilih "Semua Fasilitator" untuk daftar hadir lengkap, atau pilih satu fasilitator untuk mengunduh hanya peserta yang memilihnya.</p>
+          <label>Fasilitator</label>
+          <select id="aFilterInstr"></select>
+        </div>
         <div class="btn-row">
           <button class="btn btn-ghost" id="aExportAll">Unduh CSV</button>
           <button class="btn btn-ghost" id="aExportPdf">Unduh PDF</button>
@@ -1071,11 +1082,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     });
     if(!res.ok) throw new Error("storage get gagal: HTTP " + res.status);
     var rows = await res.json();
-    if(!rows.length){
-      var notFoundErr = new Error("key tidak ditemukan: " + key);
-      notFoundErr.notFound = true; // penanda: key memang belum pernah ada, BUKAN gangguan jaringan/server
-      throw notFoundErr;
-    }
+    if(!rows.length) throw new Error("key tidak ditemukan: " + key);
     return { key: key, value: rows[0].value, shared: !!shared };
   }
 
@@ -1189,51 +1196,33 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if(typeof window.storage === 'undefined'){
       showDiag('⚠️ window.storage tidak tersedia di lingkungan ini — data tidak akan tersimpan/tersinkron.');
     }
-    // Bedakan "key memang belum pernah dibuat" (aman diisi default) dari
-    // "gagal ambil data karena jaringan/server bermasalah sesaat" (TIDAK
-    // boleh menimpa config asli yang sudah tersimpan di database — dulu ini
-    // bug yang menyebabkan seluruh data terlihat hilang & kembali ke isian
-    // kosong setiap kali terjadi gangguan koneksi sesaat, misalnya saat
-    // keluar lalu masuk kembali ke aplikasi).
-    let configTrulyMissing = false;
     try{
       const res = await window.storage.get('app-config', true);
       config = res ? JSON.parse(res.value) : null;
-      if(!config) configTrulyMissing = true;
     }catch(e){
-      if(e && e.notFound){
-        configTrulyMissing = true;
-      }else{
-        // Gangguan jaringan/server sesaat: JANGAN reset config yang sudah
-        // ada di memori (mis. dari polling sebelumnya yang berhasil).
-        // Kalau ini pemuatan pertama (config masih null), tetap tampilkan
-        // apa adanya tanpa menyimpan default ke server.
-        if(typeof window.storage !== 'undefined') showDiag('⚠️ Gagal memuat config (jaringan/server bermasalah): ' + (e && e.message ? e.message : e) + ' — data lama TIDAK dihapus, akan dicoba lagi.');
-      }
+      config = null;
+      if(typeof window.storage !== 'undefined') showDiag('⚠️ Gagal memuat config: ' + (e && e.message ? e.message : e));
     }
-    if(configTrulyMissing){
+    if(!config){
       config = DEFAULT_CONFIG;
       await saveConfig();
     }
-    if(!config){
-      // Hanya terjadi jika pemuatan pertama gagal karena jaringan (bukan
-      // "belum ada"). Pakai default untuk tampilan sementara TANPA
-      // menyimpannya, supaya percobaan berikutnya bisa mengambil data asli.
-      config = DEFAULT_CONFIG;
-    }
     if(!Array.isArray(config.instruktur)) config.instruktur = [];
-    // backfill field baru (materi/pin) untuk config lama yang belum punya field ini
+    // backfill field baru (materi/pin/labelPeran) untuk config lama yang belum punya field ini
     config.instruktur.forEach(i=>{
       if(typeof i.materi !== 'string') i.materi = '';
       if(typeof i.pin !== 'string') i.pin = '';
       if(typeof i.kegiatan !== 'string') i.kegiatan = '';
       if(typeof i.tanggal !== 'string') i.tanggal = '';
       if(typeof i.sesi !== 'string') i.sesi = '';
+      // sebutan peran milik fasilitator ini sendiri (mis. "Narasumber", "Pengawas Sekolah").
+      // Kosong = pakai sebutan default ("Fasilitator"). Diatur masing-masing fasilitator
+      // dari ruangnya sendiri, TIDAK memengaruhi fasilitator lain.
+      if(typeof i.labelPeran !== 'string') i.labelPeran = '';
     });
     if(!config.adminPassword) config.adminPassword = DEFAULT_CONFIG.adminPassword;
     if(!config.adminEmail) config.adminEmail = DEFAULT_CONFIG.adminEmail;
     if(typeof config.catatan !== 'string') config.catatan = '';
-    if(!config.labelFasilitator || typeof config.labelFasilitator !== 'string') config.labelFasilitator = DEFAULT_CONFIG.labelFasilitator;
   }
   async function saveConfig(){
     try{ await window.storage.set('app-config', JSON.stringify(config), true); }
@@ -1316,6 +1305,22 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       records = Array.from(recordCache.values());
     }catch(e){ console.error('gagal hapus peserta total', e); showDiag('⚠️ Gagal menghapus peserta: ' + (e && e.message ? e.message : e)); }
   }
+  // Hapus SEMUA peserta terdaftar beserta SELURUH riwayat kehadirannya, dari SEMUA
+  // fasilitator sekaligus. Tersedia baik di panel Admin maupun panel Fasilitator atas
+  // permintaan — karena dampaknya global (memengaruhi semua fasilitator), tombolnya
+  // selalu dipagari dua lapis konfirmasi (showConfirm + ketik ulang teks) di sisi UI.
+  async function deleteAllParticipants(){
+    try{
+      const pList = await window.storage.list('participant:', true);
+      const pKeys = (pList && pList.keys) || [];
+      await Promise.allSettled(pKeys.map(k => window.storage.delete(k, true)));
+      participantCache.clear();
+      participants = [];
+      // Rekaman kehadiran mengacu ke peserta yang sudah tidak ada, jadi ikut dibersihkan.
+      await deleteAllRecords();
+      records = [];
+    }catch(e){ console.error('gagal menghapus semua peserta', e); showDiag('⚠️ Gagal menghapus semua peserta: ' + (e && e.message ? e.message : e)); }
+  }
   async function deleteAllRecords(){
     try{
       const list = await window.storage.list('record:', true);
@@ -1388,15 +1393,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     participantCache.delete('participant:' + id);
   }
 
-  // upsert peserta ke master list berdasarkan nama (case-insensitive, trim)
-  function upsertParticipant(nama, instansi, jabatan){
+  // upsert peserta ke daftar milik SATU fasilitator (berdasarkan nama, case-insensitive, trim,
+  // DIBATASI ke fasilitator yang sama). Peserta dengan nama yang sama tetapi didaftarkan pada
+  // fasilitator lain dianggap entri TERPISAH — datanya tidak tercampur/terlihat lintas fasilitator.
+  function upsertParticipant(nama, instansi, jabatan, instrukturId){
     const key = nama.trim().toLowerCase();
-    let p = participants.find(x => x.nama.trim().toLowerCase() === key);
+    let p = participants.find(x => x.nama.trim().toLowerCase() === key && x.instrukturId === instrukturId);
     if(p){
       p.instansi = instansi;
       p.jabatan = jabatan;
     }else{
-      p = { id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), nama: nama.trim(), instansi, jabatan };
+      p = { id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), nama: nama.trim(), instansi, jabatan, instrukturId: instrukturId || null };
       participants.push(p);
     }
     return p;
@@ -1484,13 +1491,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if(instr.absenMulai){
       const mulai = new Date(instr.absenMulai);
       if(now < mulai){
-        return { ok:false, reason: `Absensi untuk ${roleLabelLower()} ini belum dibuka. Absensi mulai ${fmtDateTime(instr.absenMulai)}.` };
+        return { ok:false, reason: `Absensi untuk ${roleLabelLower(instr)} ini belum dibuka. Absensi mulai ${fmtDateTime(instr.absenMulai)}.` };
       }
     }
     if(instr.absenSelesai){
       const selesai = new Date(instr.absenSelesai);
       if(now > selesai){
-        return { ok:false, reason: `Absensi untuk ${roleLabelLower()} ini sudah ditutup pada ${fmtDateTime(instr.absenSelesai)}.` };
+        return { ok:false, reason: `Absensi untuk ${roleLabelLower(instr)} ini sudah ditutup pada ${fmtDateTime(instr.absenSelesai)}.` };
       }
     }
     return { ok:true };
@@ -1681,7 +1688,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     sel.innerHTML = `<option value="">Pilih ${roleLabelLower()} aktif…</option>` +
       aktif.map(i=>{
         const win = checkAbsenWindow(i);
-        const label = win.ok ? escapeHtml(i.nama) : `${escapeHtml(i.nama)} (Absensi ditutup)`;
+        const namaPeran = `${escapeHtml(i.nama)} — ${escapeHtml(roleLabel(i))}`;
+        const label = win.ok ? namaPeran : `${namaPeran} (Absensi ditutup)`;
         return `<option value="${i.id}">${label}</option>`;
       }).join('');
     if(aktif.length===0){
@@ -1739,11 +1747,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     dl.innerHTML = participants.map(p=>`<option value="${escapeHtml(p.nama)}"></option>`).join('');
   }
 
-  // autofill instansi/jabatan saat nama peserta cocok dengan data tersimpan
+  // autofill instansi/jabatan saat nama peserta cocok dengan data tersimpan —
+  // dicocokkan pada fasilitator yang sedang dipilih peserta saja, supaya tidak
+  // menarik data instansi/jabatan milik peserta lain bernama sama di fasilitator lain.
   document.getElementById('pNama').addEventListener('input', ()=>{
     const val = document.getElementById('pNama').value.trim().toLowerCase();
     if(!val) return;
-    const match = participants.find(p => p.nama.trim().toLowerCase() === val);
+    const instrId = document.getElementById('pInstruktur').value;
+    const match = participants.find(p => p.nama.trim().toLowerCase() === val && p.instrukturId === instrId);
     if(match){
       document.getElementById('pInstansi').value = match.instansi || '';
       document.getElementById('pJabatan').value = match.jabatan || '';
@@ -1754,29 +1765,40 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  // ---------- sebutan "Fasilitator" yang bisa diganti admin (mis. Pemateri/Pimpinan/Ketua) ----------
-  function roleLabel(){
-    return (config && config.labelFasilitator) ? config.labelFasilitator : 'Fasilitator';
+  // ---------- sebutan "Fasilitator" per fasilitator (mis. Narasumber/Pengawas Sekolah/Pemateri) ----------
+  // Setiap fasilitator mengatur sebutan perannya SENDIRI dari ruangnya masing-masing
+  // (instr.labelPeran). Kosong = pakai sebutan default "Fasilitator". Teks umum yang tidak
+  // merujuk fasilitator tertentu (nama tab, halaman login, panel Admin, dsb) selalu memakai
+  // sebutan default, supaya tidak berubah-ubah tergantung siapa yang sedang login.
+  function roleLabel(instr){
+    if(instr && instr.labelPeran && instr.labelPeran.trim()) return instr.labelPeran.trim();
+    return DEFAULT_CONFIG.labelFasilitator;
   }
-  function roleLabelLower(){
-    return roleLabel().toLowerCase();
+  function roleLabelLower(instr){
+    return roleLabel(instr).toLowerCase();
   }
   function applyRoleLabels(){
-    const label = roleLabel();
-    const labelLower = roleLabelLower();
+    const label = DEFAULT_CONFIG.labelFasilitator; // sebutan umum/generik
+    const labelLower = label.toLowerCase();
+    const currentInstr = config.instruktur.find(i=>i.id===currentInstrId) || null;
+    const myLabel = roleLabel(currentInstr); // sebutan milik fasilitator yang sedang login di ruang ini
+    const myLabelLower = myLabel.toLowerCase();
+    document.getElementById('iLabelFasilitator').value = currentInstr ? (currentInstr.labelPeran || '') : '';
     document.getElementById('tabBtnInstruktur').textContent = label;
     document.getElementById('pInstrLabel').textContent = `${label} Sesi Ini`;
     document.getElementById('pPinLabel').textContent = `Kode Presensi (PIN) dari ${label}`;
     document.getElementById('pPin').placeholder = `Minta kode ini ke ${labelLower}`;
     document.getElementById('instrLoginTitle').textContent = `Masuk sebagai ${label}`;
     document.getElementById('instrLoginSub').textContent = `Hanya ${labelLower} yang diaktifkan oleh Admin Utama yang muncul di daftar ini.`;
-    document.getElementById('iWaktuSub').textContent = `Atur jendela waktu peserta dapat mengisi presensi dengan Anda sebagai ${labelLower}. Kosongkan jika tidak ingin membatasi waktu.`;
-    document.getElementById('iMateriSub').textContent = `Judul materi tampil untuk peserta saat memilih Anda sebagai ${labelLower}. Kode Presensi (PIN) adalah kode singkat yang sama untuk semua peserta di sesi Anda — bagikan secara lisan/tertulis saat sesi berlangsung. Kosongkan PIN jika tidak ingin mewajibkan kode.`;
-    document.getElementById('iSigTitle').textContent = `Tanda Tangan ${label}`;
+    // teks di bawah ini khusus TAMPIL di dalam ruang fasilitator yang sedang login,
+    // jadi memakai sebutan milik fasilitator itu sendiri (myLabel), bukan yang generik.
+    document.getElementById('iWaktuSub').textContent = `Atur jendela waktu peserta dapat mengisi presensi dengan Anda sebagai ${myLabelLower}. Kosongkan jika tidak ingin membatasi waktu.`;
+    document.getElementById('iMateriSub').textContent = `Judul materi tampil untuk peserta saat memilih Anda sebagai ${myLabelLower}. Kode Presensi (PIN) adalah kode singkat yang sama untuk semua peserta di sesi Anda — bagikan secara lisan/tertulis saat sesi berlangsung. Kosongkan PIN jika tidak ingin mewajibkan kode.`;
+    document.getElementById('iSigTitle').textContent = `Tanda Tangan ${myLabel}`;
     document.getElementById('adminLoginSub').textContent = `Admin Utama mengatur data kegiatan, ${labelLower} aktif, dan seluruh rekap kehadiran.`;
     document.getElementById('aCountInstrLbl').textContent = `${label} Aktif`;
     document.getElementById('aFasilitatorCardTitle').textContent = label;
-    document.getElementById('aFasilitatorCardSub').textContent = `Aktifkan ${labelLower} yang bertugas pada sesi ini. Hanya yang aktif muncul di pilihan peserta. Setiap ${labelLower} perlu kata sandi sendiri untuk masuk.`;
+    document.getElementById('aFasilitatorCardSub').textContent = `Aktifkan ${labelLower} yang bertugas pada sesi ini. Hanya yang aktif muncul di pilihan peserta. Setiap ${labelLower} mengatur sebutan perannya sendiri (mis. Narasumber, Pengawas Sekolah) dan perlu kata sandi sendiri untuk masuk.`;
     document.getElementById('aNewInstr').placeholder = `Nama ${labelLower} baru`;
     document.getElementById('aCatatanCardTitle').textContent = `Catatan ${label}`;
     document.getElementById('navLabelInstruktur').textContent = label;
@@ -1814,11 +1836,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if(selectedInstr && selectedInstr.pin){
       const pinInput = (document.getElementById('pPin').value || '').trim();
       if(!pinInput){
-        msgEl.innerHTML = `<div class="msg err">Masukkan Kode Presensi (PIN) dari ${roleLabelLower()}.</div>`;
+        msgEl.innerHTML = `<div class="msg err">Masukkan Kode Presensi (PIN) dari ${roleLabelLower(selectedInstr)}.</div>`;
         return;
       }
       if(pinInput !== selectedInstr.pin){
-        msgEl.innerHTML = `<div class="msg err">Kode Presensi (PIN) salah. Tanyakan kode yang benar ke ${roleLabelLower()}.</div>`;
+        msgEl.innerHTML = `<div class="msg err">Kode Presensi (PIN) salah. Tanyakan kode yang benar ke ${roleLabelLower(selectedInstr)}.</div>`;
         return;
       }
     }
@@ -1833,7 +1855,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     // dan memicu gagal simpan (rate limit). Cache lokal `participants` sudah
     // cukup segar dari polling otomatis (refreshAll) dan dari upsertParticipant
     // di bawah, jadi reload penuh di sini tidak diperlukan lagi.
-    const participant = upsertParticipant(nama, instansi, jabatan);
+    const participant = upsertParticipant(nama, instansi, jabatan, instrId);
     const okP = await saveParticipant(participant);
     if(!okP){
       btn.disabled = false; btn.textContent = 'Kirim Presensi';
@@ -1842,9 +1864,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }
 
     const instr = config.instruktur.find(i=>i.id===instrId);
+    // Kalau peserta ini SUDAH PERNAH presensi di sesi fasilitator yang sama, jangan buat
+    // rekaman baru — timpa rekaman lamanya (pakai id & key storage yang sama) supaya
+    // tidak ada data ganda meskipun peserta mengulang/mengoreksi sebagian datanya.
+    const existingRecord = records.find(r => r.participantId === participant.id && r.instrukturId === instrId);
     const record = {
-      id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
-      nomor: 0,
+      id: existingRecord ? existingRecord.id : ('r_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
+      nomor: existingRecord ? existingRecord.nomor : 0,
       participantId: participant.id,
       nama, instansi, jabatan,
       instrukturId: instrId,
@@ -1859,13 +1885,19 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       msgEl.innerHTML = '<div class="msg err">Gagal mengirim presensi. Periksa koneksi lalu coba lagi.</div>';
       return;
     }
-    record.nomor = records.length + 1;
-    records.push(record); // update cache lokal, tidak perlu reload semua data dari storage
+    if(existingRecord){
+      // update cache lokal di tempat yang sama, jangan tambah entri baru
+      Object.assign(existingRecord, record);
+    }else{
+      record.nomor = records.length + 1;
+      records.push(record); // update cache lokal, tidak perlu reload semua data dari storage
+    }
 
     btn.disabled = false; btn.textContent = 'Kirim Presensi';
 
-    document.getElementById('stampDetail').textContent =
-      `${nama} — hadir bersama ${record.instrukturNama}.`;
+    document.getElementById('stampDetail').textContent = existingRecord
+      ? `${nama} — presensi diperbarui bersama ${record.instrukturNama}.`
+      : `${nama} — hadir bersama ${record.instrukturNama}.`;
     document.getElementById('stampOverlay').classList.add('show');
 
     // reset form
@@ -1887,11 +1919,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   // ================= INSTRUKTUR TAB =================
   function renderInstrSelect(){
     const sel = document.getElementById('iSelect');
+    const currentVal = sel.value;
     const aktif = config.instruktur.filter(i=>i.aktif);
     if(aktif.length===0){
       sel.innerHTML = `<option value="">Belum ada ${roleLabelLower()} aktif</option>`;
     }else{
-      sel.innerHTML = aktif.map(i=>`<option value="${i.id}">${escapeHtml(i.nama)}</option>`).join('');
+      sel.innerHTML = `<option value="">Pilih nama Anda…</option>` +
+        aktif.map(i=>`<option value="${i.id}">${escapeHtml(i.nama)}</option>`).join('');
+      // pertahankan pilihan yang sedang aktif — jangan reset ke default tiap kali
+      // daftar di-refresh (mis. oleh polling otomatis tiap 15 detik).
+      if(currentVal && aktif.some(i=>i.id===currentVal)){
+        sel.value = currentVal;
+      }
     }
   }
   document.getElementById('iEnter').addEventListener('click', ()=>{
@@ -1917,6 +1956,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     iWaktuDirty = false;
     document.getElementById('instrLoginCard').classList.add('hidden');
     document.getElementById('instrPanel').classList.remove('hidden');
+    applyRoleLabels();
     renderInstrPanel();
     loadFasilitatorSignature();
   });
@@ -1925,20 +1965,27 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     document.getElementById('iPass').value = '';
     document.getElementById('instrLoginCard').classList.remove('hidden');
     document.getElementById('instrPanel').classList.add('hidden');
+    document.getElementById('iSelect').value = '';
+    applyRoleLabels();
   });
   function renderInstrPanel(){
     const instr = config.instruktur.find(i=>i.id===currentInstrId);
     if(!instr){ document.getElementById('iLogout').click(); return; }
     document.getElementById('iWelcome').textContent = 'Sesi — ' + instr.nama;
+    // Hanya peserta yang terdaftar PADA fasilitator ini (instrukturId cocok) yang ditampilkan.
+    // Peserta yang terdaftar pada fasilitator lain TIDAK ikut tampil di sini — daftar akan
+    // kosong saat fasilitator lain login untuk memulai sesi, dan setiap fasilitator bisa
+    // login bersamaan dengan kumpulan nama peserta yang berbeda tanpa saling tercampur.
+    const myParticipants = participants.filter(p=>p.instrukturId===currentInstrId);
     const hadirIds = new Set(records.filter(r=>r.instrukturId===currentInstrId).map(r=>r.participantId));
-    const hadirCount = participants.filter(p=>hadirIds.has(p.id)).length;
+    const hadirCount = myParticipants.filter(p=>hadirIds.has(p.id)).length;
     document.getElementById('iCount').textContent = hadirCount;
-    document.getElementById('iAbsent').textContent = Math.max(0, participants.length - hadirCount);
+    document.getElementById('iAbsent').textContent = Math.max(0, myParticipants.length - hadirCount);
     const listEl = document.getElementById('iList');
-    if(participants.length===0){
+    if(myParticipants.length===0){
       listEl.innerHTML = '<div class="empty"><div class="icon">🗒️</div>Belum ada peserta terdaftar.</div>';
     }else{
-      const sorted = [...participants].sort((a,b)=> a.nama.localeCompare(b.nama, 'id'));
+      const sorted = [...myParticipants].sort((a,b)=> a.nama.localeCompare(b.nama, 'id'));
       listEl.innerHTML = sorted.map(p=>{
         const hadir = hadirIds.has(p.id);
         const ketHtml = (!hadir && p.keteranganTidakHadir) ? ` · <span style="color:var(--err);">${escapeHtml(p.keteranganTidakHadir)}</span>` : '';
@@ -2079,6 +2126,28 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     });
   });
 
+  document.getElementById('iDeleteAllParticipants').addEventListener('click', ()=>{
+    const total = participants.length;
+    const msgEl = document.getElementById('iDeleteAllMsg');
+    msgEl.innerHTML = '';
+    showConfirm(`Hapus SEMUA ${total} peserta secara PERMANEN dari seluruh sistem — bukan hanya sesi Anda? Ini akan menghapus data peserta beserta seluruh riwayat kehadirannya di SEMUA ${roleLabelLower()}. Tindakan ini tidak dapat dibatalkan.`, ()=>{
+      showPrompt('Untuk konfirmasi akhir, ketik "HAPUS SEMUA" (huruf besar) lalu tekan Simpan.', '', async (val)=>{
+        if(val !== 'HAPUS SEMUA'){
+          msgEl.innerHTML = '<div class="msg err">Teks konfirmasi tidak sesuai. Penghapusan dibatalkan.</div>';
+          return;
+        }
+        const btn = document.getElementById('iDeleteAllParticipants');
+        btn.disabled = true; btn.textContent = 'Menghapus…';
+        await deleteAllParticipants();
+        btn.disabled = false; btn.textContent = 'Hapus Semua Peserta (Permanen, Semua Sesi)';
+        msgEl.innerHTML = '<div class="msg ok">Semua peserta dan riwayat kehadirannya telah dihapus.</div>';
+        renderInstrPanel();
+        renderPesertaMasterOptions();
+        if(adminAuthed) renderAdminPanel();
+      });
+    });
+  });
+
   document.getElementById('iList').addEventListener('click', async (e)=>{
     const undoBtn = e.target.closest('[data-action="undoMyAttendance"]');
     const editBtn = e.target.closest('[data-action="editParticipant"]');
@@ -2182,7 +2251,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if(id){
       p = updateParticipantById(id, nama, instansi, jabatan, keterangan);
     }else{
-      p = upsertParticipant(nama, instansi, jabatan);
+      p = upsertParticipant(nama, instansi, jabatan, currentInstrId);
       p.keteranganTidakHadir = keterangan;
     }
     const okP = await saveParticipant(p);
@@ -2222,7 +2291,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   // ---------- ekspor peserta master ke file JSON (cadangan) ----------
   document.getElementById('iJsonExport').addEventListener('click', ()=>{
-    const data = participants.map(p=>({ nama: p.nama, instansi: p.instansi, jabatan: p.jabatan }));
+    const data = participants.filter(p=>p.instrukturId===currentInstrId).map(p=>({ nama: p.nama, instansi: p.instansi, jabatan: p.jabatan }));
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2255,7 +2324,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         const instansi = item && item.instansi ? String(item.instansi).trim() : '';
         const jabatan = item && item.jabatan ? String(item.jabatan).trim() : '';
         if(!nama || !instansi || !jabatan){ dilewati++; continue; }
-        const p = upsertParticipant(nama, instansi, jabatan);
+        const p = upsertParticipant(nama, instansi, jabatan, currentInstrId);
         const okP = await saveParticipant(p);
         if(!okP){ dilewati++; continue; }
         const sudahHadir = records.some(r=>r.participantId===p.id && r.instrukturId===currentInstrId);
@@ -2342,33 +2411,45 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     document.getElementById('aTanggal').value = config.tanggal || '';
     document.getElementById('aSesi').value = config.sesi || '';
     document.getElementById('aNewEmail').placeholder = 'Saat ini: ' + (config.adminEmail || '-');
-    document.getElementById('aLabelFasilitator').value = config.labelFasilitator || DEFAULT_CONFIG.labelFasilitator;
   }
 
-  document.getElementById('aSaveLabel').addEventListener('click', async ()=>{
-    const val = document.getElementById('aLabelFasilitator').value.trim();
-    const msgEl = document.getElementById('aLabelMsg');
-    if(!val){
-      msgEl.innerHTML = '<div class="msg err">Sebutan tidak boleh kosong.</div>';
-      return;
-    }
-    const btn = document.getElementById('aSaveLabel');
+  // Sebutan peran kini per-fasilitator (instr.labelPeran) — hanya berlaku untuk fasilitator
+  // yang sedang login di ruang ini, TIDAK memengaruhi fasilitator lain.
+  document.getElementById('iSaveLabel').addEventListener('click', async ()=>{
+    const val = document.getElementById('iLabelFasilitator').value.trim();
+    const msgEl = document.getElementById('iLabelMsg');
+    const btn = document.getElementById('iSaveLabel');
     btn.disabled = true; btn.textContent = 'Menyimpan…';
     await loadConfig();
-    config.labelFasilitator = val;
+    const instr = config.instruktur.find(i=>i.id===currentInstrId);
+    if(!instr){
+      btn.disabled = false; btn.textContent = 'Simpan Sebutan';
+      msgEl.innerHTML = '<div class="msg err">Sesi Anda tidak ditemukan, silakan masuk ulang.</div>';
+      return;
+    }
+    instr.labelPeran = val; // kosong = pakai sebutan default "Fasilitator"
     await saveConfig();
     applyRoleLabels();
-    renderAdminPanel();
+    if(adminAuthed) renderAdminPanel();
     renderPesertaInstrOptions();
     renderInstrSelect();
     btn.disabled = false; btn.textContent = 'Simpan Sebutan';
-    msgEl.innerHTML = '<div class="msg ok">Sebutan tersimpan.</div>';
+    msgEl.innerHTML = `<div class="msg ok">Sebutan Anda tersimpan sebagai "${escapeHtml(roleLabel(instr))}".</div>`;
   });
 
   function renderAdminPanel(){
     document.getElementById('aCountTotal').textContent = records.length;
     document.getElementById('aCountInstr').textContent = config.instruktur.filter(i=>i.aktif).length;
     document.getElementById('aCatatan').textContent = config.catatan && config.catatan.trim() ? config.catatan : '– Belum ada catatan –';
+
+    // dropdown pilih fasilitator untuk unduh CSV/PDF khusus satu fasilitator
+    const filterSel = document.getElementById('aFilterInstr');
+    const filterCurrentVal = filterSel.value;
+    filterSel.innerHTML = `<option value="">Semua ${roleLabelLower()}</option>` +
+      config.instruktur.map(i=>`<option value="${i.id}">${escapeHtml(i.nama)} — ${escapeHtml(roleLabel(i))}</option>`).join('');
+    if(filterCurrentVal && config.instruktur.some(i=>i.id===filterCurrentVal)){
+      filterSel.value = filterCurrentVal;
+    }
 
     // instruktur list
     const iListEl = document.getElementById('aInstrList');
@@ -2401,12 +2482,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       aListEl.innerHTML = sorted.map(p=>{
         const r = recByParticipant.get(p.id);
         const hadir = !!r;
+        const owner = config.instruktur.find(i=>i.id===p.instrukturId);
+        const ownerLabel = owner ? owner.nama : (p.instrukturId ? '—' : 'belum ditentukan');
         const ketHtml = (!hadir && p.keteranganTidakHadir) ? ` · <span style="color:var(--err);">${escapeHtml(p.keteranganTidakHadir)}</span>` : '';
         return `
         <div class="list-item">
           <div>
             <div class="li-name">${escapeHtml(p.nama)}</div>
-            <div class="li-sub">${escapeHtml(p.instansi)} · ${escapeHtml(p.jabatan)}${hadir ? ' · ' + escapeHtml(roleLabel()) + ': ' + escapeHtml(r.instrukturNama) : ketHtml}</div>
+            <div class="li-sub">${escapeHtml(p.instansi)} · ${escapeHtml(p.jabatan)} · terdaftar pada ${escapeHtml(roleLabelLower())}: ${escapeHtml(ownerLabel)}${hadir ? ' · Hadir bersama ' + escapeHtml(r.instrukturNama) : ketHtml}</div>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
             <span class="badge ${hadir?'badge-on':'badge-off'}"><span class="dot"></span>${hadir?'Hadir':'Tidak Hadir'}</span>
@@ -2487,7 +2570,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   });
 
   document.getElementById('aExportAll').addEventListener('click', ()=>{
-    downloadCsv(buildRoster(null), 'daftar_hadir_lengkap.csv');
+    const filterId = document.getElementById('aFilterInstr').value;
+    if(filterId){
+      const instr = config.instruktur.find(i=>i.id===filterId);
+      downloadCsv(buildRoster(filterId), `presensi_${(instr ? instr.nama : 'fasilitator').replace(/\s+/g,'_')}.csv`);
+    }else{
+      downloadCsv(buildRoster(null), 'daftar_hadir_lengkap.csv');
+    }
   });
 
   document.getElementById('aSaveAccount').addEventListener('click', async ()=>{
@@ -2520,6 +2609,28 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       await deleteAllRecords();
       records = [];
       renderAdminPanel();
+    });
+  });
+
+  document.getElementById('aDeleteAllParticipants').addEventListener('click', ()=>{
+    const total = participants.length;
+    const msgEl = document.getElementById('aDeleteAllMsg');
+    msgEl.innerHTML = '';
+    showConfirm(`Hapus SEMUA ${total} peserta secara PERMANEN dari seluruh sistem, beserta seluruh riwayat kehadirannya di SEMUA ${roleLabelLower()}? Tindakan ini tidak dapat dibatalkan.`, ()=>{
+      showPrompt('Untuk konfirmasi akhir, ketik "HAPUS SEMUA" (huruf besar) lalu tekan Simpan.', '', async (val)=>{
+        if(val !== 'HAPUS SEMUA'){
+          msgEl.innerHTML = '<div class="msg err">Teks konfirmasi tidak sesuai. Penghapusan dibatalkan.</div>';
+          return;
+        }
+        const btn = document.getElementById('aDeleteAllParticipants');
+        btn.disabled = true; btn.textContent = 'Menghapus…';
+        await deleteAllParticipants();
+        btn.disabled = false; btn.textContent = 'Hapus Semua Peserta (Permanen)';
+        msgEl.innerHTML = '<div class="msg ok">Semua peserta dan riwayat kehadirannya telah dihapus.</div>';
+        renderAdminPanel();
+        renderPesertaMasterOptions();
+        if(!document.getElementById('instrPanel').classList.contains('hidden')) renderInstrPanel();
+      });
     });
   });
 
@@ -2571,7 +2682,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     let y = startY;
     doc.setFont('helvetica','bold');
     doc.setFontSize(10);
-    doc.text(`Tanda Tangan ${roleLabel()}`, pageWidth - marginX, y, { align: 'right' });
+    // kalau semua tanda tangan di sini milik fasilitator dengan sebutan yang sama, pakai sebutan
+    // itu di judul; kalau campuran (mis. PDF gabungan Admin), pakai sebutan default umum.
+    const uniqueLabels = [...new Set(signList.map(i=>roleLabel(i)))];
+    const headerLabel = uniqueLabels.length===1 ? uniqueLabels[0] : DEFAULT_CONFIG.labelFasilitator;
+    doc.text(`Tanda Tangan ${headerLabel}`, pageWidth - marginX, y, { align: 'right' });
     y += 16;
 
     const totalRows = Math.ceil(signList.length / perRow);
@@ -2607,12 +2722,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         doc.setFont('helvetica','bold');
         doc.setFontSize(9.5);
         doc.setTextColor(27,42,74);
-        doc.text(instr.nama || roleLabel(), x, blockTop+70);
+        doc.text(instr.nama || roleLabel(instr), x, blockTop+70);
 
         doc.setFont('helvetica','normal');
         doc.setFontSize(8);
         doc.setTextColor(120);
-        doc.text(roleLabel(), x, blockTop+82);
+        doc.text(roleLabel(instr), x, blockTop+82);
         doc.setTextColor(0);
       });
     }
@@ -2620,7 +2735,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return y + totalRows*92;
   }
 
-  function generatePdf(rows, judulTambahan, filename, signList, materiInfo, facilitatorInfo, sessionOverride){
+  function generatePdf(rows, judulTambahan, filename, signList, materiInfo, facilitatorInfo, sessionOverride, facilitatorLabelText){
     if(rows.length===0){ showDiag('Belum ada peserta terdaftar untuk diunduh.'); return; }
     if(!window.jspdf){ showDiag('⚠️ Gagal memuat modul PDF. Coba muat ulang halaman.'); return; }
     try{
@@ -2645,7 +2760,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         doc.setFont('helvetica','bold');
         const parts = [];
         if(materiInfo) parts.push(`Materi: ${materiInfo}`);
-        if(facilitatorInfo) parts.push(`${roleLabel()}: ${facilitatorInfo}`);
+        if(facilitatorInfo) parts.push(`${facilitatorLabelText || DEFAULT_CONFIG.labelFasilitator}: ${facilitatorInfo}`);
         doc.text(parts.join('   |   '), 40, subtitleY);
         doc.setFont('helvetica','normal');
       }
@@ -2731,12 +2846,20 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       return;
     }
     const signList = [{ nama: instr.nama, signature: instr.signature }];
-    generatePdf(buildRoster(currentInstrId), '', `presensi_${instr.nama.replace(/\s+/g,'_')}.pdf`, signList, instr.materi || '', instr.nama, { kegiatan: instr.kegiatan, tanggal: instr.tanggal, sesi: instr.sesi });
+    generatePdf(buildRoster(currentInstrId), '', `presensi_${instr.nama.replace(/\s+/g,'_')}.pdf`, signList, instr.materi || '', instr.nama, { kegiatan: instr.kegiatan, tanggal: instr.tanggal, sesi: instr.sesi }, roleLabel(instr));
   });
 
   document.getElementById('aExportPdf').addEventListener('click', ()=>{
-    const signList = config.instruktur.filter(i=>i.aktif).map(i=>({ nama: i.nama, signature: i.signature || null }));
-    generatePdf(buildRoster(null), '', 'daftar_hadir_lengkap.pdf', signList);
+    const filterId = document.getElementById('aFilterInstr').value;
+    if(filterId){
+      const instr = config.instruktur.find(i=>i.id===filterId);
+      if(!instr){ showDiag('Fasilitator tidak ditemukan.'); return; }
+      const signList = [{ nama: instr.nama, signature: instr.signature || null }];
+      generatePdf(buildRoster(filterId), '', `presensi_${instr.nama.replace(/\s+/g,'_')}.pdf`, signList, instr.materi || '', instr.nama, { kegiatan: instr.kegiatan, tanggal: instr.tanggal, sesi: instr.sesi }, roleLabel(instr));
+    }else{
+      const signList = config.instruktur.filter(i=>i.aktif).map(i=>({ nama: i.nama, signature: i.signature || null }));
+      generatePdf(buildRoster(null), '', 'daftar_hadir_lengkap.pdf', signList);
+    }
   });
 
 
@@ -2756,14 +2879,21 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     URL.revokeObjectURL(url);
   }
 
-  // bangun daftar roster (semua peserta master + status hadir/tidak hadir) untuk instruktur tertentu, atau semua (null)
+  // bangun daftar roster + status hadir/tidak hadir.
+  // Jika instrIdOrNull diisi (mode Fasilitator): HANYA peserta yang terdaftar PADA
+  // fasilitator itu sendiri (p.instrukturId === instrIdOrNull) yang disertakan — peserta
+  // milik Admin/fasilitator lain TIDAK ikut ke PDF/CSV. Jika instrIdOrNull null (mode Admin
+  // "daftar hadir lengkap"): seluruh peserta dari semua fasilitator disertakan.
   function buildRoster(instrIdOrNull){
     const recByParticipant = new Map();
     records.forEach(r=>{
       if(instrIdOrNull && r.instrukturId !== instrIdOrNull) return;
       if(!recByParticipant.has(r.participantId)) recByParticipant.set(r.participantId, r);
     });
-    return [...participants].sort((a,b)=> a.nama.localeCompare(b.nama, 'id')).map(p=>{
+    const scopedParticipants = instrIdOrNull
+      ? participants.filter(p=>p.instrukturId===instrIdOrNull)
+      : participants;
+    return [...scopedParticipants].sort((a,b)=> a.nama.localeCompare(b.nama, 'id')).map(p=>{
       const r = recByParticipant.get(p.id);
       return {
         nama: p.nama, instansi: p.instansi, jabatan: p.jabatan,
