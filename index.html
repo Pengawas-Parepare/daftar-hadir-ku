@@ -1077,12 +1077,34 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   async function get(key, shared){
-    var res = await fetch(REST_URL + "?key=eq." + encodeURIComponent(key) + "&select=key,value", {
-      headers: headers()
-    });
-    if(!res.ok) throw new Error("storage get gagal: HTTP " + res.status);
+    var res;
+    try{
+      res = await fetch(REST_URL + "?key=eq." + encodeURIComponent(key) + "&select=key,value", {
+        headers: headers()
+      });
+    }catch(networkErr){
+      // Gagal terhubung sama sekali (offline, project di-pause, dsb.) — BUKAN berarti
+      // key tidak ada. notFound=false supaya pemanggil tidak menganggap ini "data
+      // memang belum ada" dan lalu menimpanya dengan nilai default.
+      var connErr = new Error("storage get gagal: tidak bisa terhubung (" + (networkErr && networkErr.message ? networkErr.message : networkErr) + ")");
+      connErr.notFound = false;
+      throw connErr;
+    }
+    if(!res.ok){
+      var httpErr = new Error("storage get gagal: HTTP " + res.status);
+      // notFound=false: ini kegagalan request (mis. project paused, rate limit, RLS),
+      // bukan bukti bahwa key tsb memang belum pernah dibuat.
+      httpErr.notFound = false;
+      throw httpErr;
+    }
     var rows = await res.json();
-    if(!rows.length) throw new Error("key tidak ditemukan: " + key);
+    if(!rows.length){
+      var missErr = new Error("key tidak ditemukan: " + key);
+      // notFound=true: request BERHASIL dan servernya memang tidak punya baris ini —
+      // ini satu-satunya kondisi yang aman untuk dianggap "data memang belum ada".
+      missErr.notFound = true;
+      throw missErr;
+    }
     return { key: key, value: rows[0].value, shared: !!shared };
   }
 
@@ -1196,16 +1218,33 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if(typeof window.storage === 'undefined'){
       showDiag('⚠️ window.storage tidak tersedia di lingkungan ini — data tidak akan tersimpan/tersinkron.');
     }
+    let configGenuinelyMissing = false;
     try{
       const res = await window.storage.get('app-config', true);
       config = res ? JSON.parse(res.value) : null;
     }catch(e){
       config = null;
-      if(typeof window.storage !== 'undefined') showDiag('⚠️ Gagal memuat config: ' + (e && e.message ? e.message : e));
+      // Hanya anggap "config memang belum pernah dibuat" kalau request-nya BERHASIL
+      // dan server memang tidak punya baris untuk key ini (e.notFound === true).
+      // Kalau gagalnya karena error koneksi/HTTP/rate limit (notFound !== true),
+      // JANGAN timpa config asli dengan default — cukup tampilkan peringatan dan
+      // biarkan pengguna reload/coba lagi setelah koneksi/Supabase pulih.
+      configGenuinelyMissing = (e && e.notFound === true);
+      if(typeof window.storage !== 'undefined'){
+        showDiag(configGenuinelyMissing
+          ? '⚠️ Config belum ada, membuat konfigurasi default.'
+          : '⚠️ Gagal memuat config (bukan berarti data hilang — coba muat ulang halaman): ' + (e && e.message ? e.message : e));
+      }
     }
     if(!config){
-      config = DEFAULT_CONFIG;
-      await saveConfig();
+      if(configGenuinelyMissing){
+        config = DEFAULT_CONFIG;
+        await saveConfig();
+      }else{
+        // Pakai default HANYA untuk render sementara di layar ini — TIDAK disimpan
+        // ke Supabase, supaya config asli (jika masih ada di server) tidak tertimpa.
+        config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      }
     }
     if(!Array.isArray(config.instruktur)) config.instruktur = [];
     // backfill field baru (materi/pin/labelPeran) untuk config lama yang belum punya field ini
